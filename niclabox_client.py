@@ -1,6 +1,11 @@
-# edb 20231116
+# edb 20231122
 # streaming distance and picture from Arduino Nicla Vision (client)
-# to a device running Python (server)
+# to a device running Python (server) via UDP
+# the picture fits into one UDP packet after compression
+# leds are used for warning in case of errors:
+#   blue for network
+#   green for unforseen
+#   red for picture quality
 
 import time
 import socket
@@ -10,25 +15,30 @@ from machine import LED
 from machine import I2C
 from vl53l1x import VL53L1X
 
-# wifi ssid and password, server address and port
-SSID = "edb"
-PASSWORD = "pitagora"
-# SSID = "TIM-36282322"
-# PASSWORD = "7kDqVHcfyeypvcQT"
 
-IP_SERVER = "192.168.2.112"
-PORT_SERVER = 8000 # must be the same on server
+# wifi ssid and password
+ssid = "edb"
+password = "pitagora"
+# ssid = "TIM-36282322"
+# password = "7kDqVHcfyeypvcQT"
 
-# set picture quality
-QUALITY = 50
+# server address and port
+ip = "192.168.2.112"
+port = 8000
 
-# set maximum packet size
-packet_size = 65000
+# sensing settings
+picture_quality = 80
 
-# led init
-blue = LED("LED_BLUE")
-green = LED("LED_GREEN")
-red = LED("LED_RED")
+### warning settings
+verbose = True
+error_timeout = 5 # seconds to display error warning led
+
+# error handeling init
+error = False
+error_time = 0
+error_network = LED("LED_BLUE")
+error_unforseen = LED("LED_GREEN")
+error_quality = LED("LED_RED")
 
 # camera init
 sensor.reset()
@@ -38,56 +48,94 @@ sensor.set_pixformat(sensor.RGB565)
 # distance sensor init
 tof = VL53L1X(I2C(2))
 
-# connecting to wifi,
+# wifi init
 wlan = network.WLAN(network.STA_IF)
-wlan.active(True)
-wlan.connect(SSID, PASSWORD)
-while not wlan.isconnected():
-    blue.on() # led blue while trying to connect
-    time.sleep_ms(500)
-blue.off()
-print(wlan.ifconfig())
 
-# client socket init
+# transmission init
+distance_size = 4 # size for conversion of distance from Int to bytes
+packet_size = 65000 # safely less than 65540 that is the maximum for UDP
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
+
+def connect():
+    if verbose == True:
+        print("Connecting to wifi network", ssid)
+    wlan.active(False)
+    time.sleep(1)
+    wlan.active(True)
+    while not wlan.isconnected():
+        error_network.on()
+        time.sleep(1)
+        wlan.connect(ssid, password)
+    error_network.off()
+    if verbose == True:
+        print(wlan.ifconfig())
+
 def sense_and_send():
+
     # sensing, first distance and then camera that takes time to save in memory
-    distance_int = tof.read() # class int
+    distance = tof.read() # class int
     picture = sensor.snapshot() # class Image, bytes not readable
 
     # printing sensors output
-    # print("Distance: ", distance_int)
-    # print("Picture: ")
-    # print(picture)
+    if verbose == True:
+        print("Distance:", distance)
+        print("Picture:")
+        print(picture)
 
-    # converting numeric info into bites
-    distance = distance_int.to_bytes(4, "big")
+    # converting with known size the distance
+    distance = distance.to_bytes(distance_size, "big")
 
-    # compressing and sizing the picture
-    picture.compress(quality=QUALITY) # class Image, bytes readable as jpeg
-    picture_size = len(picture)
-    
-    # if the picture is too big, we don't transmit
-    if picture_size > packet_size:
-        red.on() # led red if picture is too big
+    # compressing/converting and sizing the picture
+    picture.compress(picture_quality) # class Image, bytes readable as jpeg
+    picture_size = len(picture) # dimension of the compressed picture
+
+    # printing transmission info and data to transmit
+    if verbose == True:
+        print("Distance size:", distance_size, "set by the user")
+        print("Picture quality:", picture_quality)
+        print("Picture size:", picture_size,  "must be less than", packet_size)
+        print("Distance:", distance)
+        print("Picture:")
+        print(picture)
+
+    if picture_size > packet_size: # picture too big, skip transmission
+        raise ValueError
     else:
-        red.off()
-
-        # transmitting
-        client.sendto(distance, (IP_SERVER, PORT_SERVER))
-        # print("distance transmitted")
-        client.sendto(picture, (IP_SERVER, PORT_SERVER))
-        # print("picture transmitted")
+        client.sendto(distance, (ip, port))
+        client.sendto(picture, (ip, port))
+        if verbose == True:
+            print("Transmission completed")
 
 while True:
     try:
+        if not wlan.isconnected():
+            connect()
+
+        # error warning reset
+        if error == True:
+            if verbose == True:
+                print("\033[91mError in the last", error_timeout, "seconds\033[0m")
+            if time.time() - error_time > error_timeout:
+                error_time = 0
+                error_quality.off()
+                error_unforseen.off()
+                error = False
+
         sense_and_send()
-    except OSError as e:
-        print("Error: ", e)
-        green.on() # led green if there has been an error
+
+    except ValueError as e:
+        if verbose == True:
+            print("\033[91mError: the compressed picture is too big. Lower the quality!\033[0m")
+        error = True
+        error_time = time.time()
+        error_quality.on()
         pass
 
-
-
-
+    except OSError as e: # unforseen error, debug with OpenMV
+        if verbose == True:
+            print("\033[91mError: ", e, "\033[0m")
+        error = True
+        error_time = time.time()
+        error_unforseen.on()
+        pass
