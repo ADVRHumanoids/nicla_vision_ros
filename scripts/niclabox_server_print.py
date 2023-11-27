@@ -10,7 +10,7 @@ import cv2
 
 
 # server address and port (the address of the machine running this code, any available port)
-ip = "192.168.2.112"
+ip = "192.168.61.112"
 port = 8000
 
 # set maximum packet size

@@ -23,11 +23,11 @@ password = "pitagora"
 # password = "7kDqVHcfyeypvcQT"
 
 # server address and port
-ip = "192.168.2.112"
+ip = "192.168.61.112"
 port = 8000
 
 # sensing settings
-picture_quality = 80
+picture_quality = 50
 
 ### warning settings
 verbose = True
@@ -61,12 +61,12 @@ def connect():
     if verbose == True:
         print("Connecting to wifi network", ssid)
     wlan.active(False)
-    time.sleep(1)
+    time.sleep(2)
     wlan.active(True)
+    wlan.connect(ssid, password)
     while not wlan.isconnected():
         error_network.on()
         time.sleep(1)
-        wlan.connect(ssid, password)
     error_network.off()
     if verbose == True:
         print(wlan.ifconfig())
@@ -106,6 +106,8 @@ def sense_and_send():
         client.sendto(picture, (ip, port))
         if verbose == True:
             print("Transmission completed")
+
+connect()
 
 while True:
     try:
