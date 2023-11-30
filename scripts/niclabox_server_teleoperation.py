@@ -40,8 +40,8 @@ import cv2
 
 
 # server address and port (the address of the machine running this code, any available port)
-ip = "192.168.61.112"
-port = 8000
+ip = "YourServerIP"
+port = 8002
 
 # set maximum packet size
 packet_size = 65540
@@ -69,7 +69,7 @@ def receive_and_ros():
         if cv2.waitKey(1) == ord('q'):
             exit(0)
 
-        # file output
+        # uncomment to output to a file without using OpenCV and numpy
         # distance_file = open("distance.txt", "w")
         # distance_file.write(str(distance))
         # distance_file.close()
