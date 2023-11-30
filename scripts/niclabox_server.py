@@ -1,18 +1,42 @@
-# edb 20231122
+# BSD 2-Clause License
+
+# Copyright 2023 
+# Edoardo Del Bianco <delbianco.edoardo@gmail.com>
+# Federico Rollo <rollo.f96@gmail.com>
+# All rights reserved.
+
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+
+# 1. Redistributions of source code must retain the above copyright notice, this
+#    list of conditions and the following disclaimer.
+
+# 2. Redistributions in binary form must reproduce the above copyright notice,
+#    this list of conditions and the following disclaimer in the documentation
+#    and/or other materials provided with the distribution.
+
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+# DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE LIABLE
+# FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+# DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+# SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+# CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+# OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+# OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+
+
 # receiving distance and picture from Arduino Nicla Vision (client)
 # and sending them on two ROS messages
 # the picture fits into one UDP packet after compression
 
-import time
 import socket
-import numpy as np
-import cv2
 
 import rospy
 from sensor_msgs.msg import CompressedImage
-from std_msgs.msg import Int32
-from cv_bridge import CvBridge
-
+from sensor_msgs.msg import Range
 
 class Server:
 
@@ -22,8 +46,8 @@ class Server:
     def __init__(self) -> None:
 
         # server address and port (the address of the machine running this code, any available port)
-        ip = rospy.get_param("server_ip", "192.168.61.112")
-        port = rospy.get_param("server_port", 8000)
+        ip = rospy.get_param("~server_ip")
+        port = rospy.get_param("~server_port")
 
         # server socket init 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -31,43 +55,45 @@ class Server:
         self.server.bind((ip, port))
         rospy.loginfo("Waiting for niclabox to stream on " + ip + " : " + str(port))
 
-        distance_topic = rospy.get_param("distance_topic", "niclabox/distance")
-        picture_topic = rospy.get_param("picture_topic", "niclabox/picture/compressed")
+        distance_topic = rospy.get_param("~distance_topic")
+        picture_topic = rospy.get_param("~picture_topic")
 
-        self.distance_pub = rospy.Publisher(distance_topic, Int32, queue_size=5)
+        self.distance_pub = rospy.Publisher(distance_topic, Range, queue_size=5)
         self.picture_pub  = rospy.Publisher(picture_topic, CompressedImage, queue_size=5)
 
-        self.cv_bridge = CvBridge()
+        self.range_msg = Range()
+        self.range_msg.header.frame_id = rospy.get_param("~niclabx_distance_tf")
+        self.range_msg.radiation_type = Range.INFRARED
+        self.range_msg.min_range = 0
+        self.range_msg.max_range = 4
+        self.range_msg.field_of_view = 15
+
+        self.image_msg = CompressedImage()
+        self.image_msg.format = "jpeg"
 
 
     def receive_and_ros(self):
         # receive distance value
         packet, _ = self.server.recvfrom(self.packet_size)
+        ros_time = rospy.Time.now()
 
         if len(packet) < 100: # a small packet is the distance
             distance = packet
             distance = int.from_bytes(distance, "big")
 
-            # ros_dist = Int32()
-            # ros_dist.data = distance
-            self.distance_pub.publish(Int32(distance))
-            # print("distance", distance)
+            self.range_msg.range = distance
+            self.range_msg.header.stamp = ros_time
+
+            self.distance_pub.publish(self.range_msg)
+
 
         else:  # a big packet is the picture
 
             picture = packet
            
-            # image = cv2.imdecode(np.frombuffer(picture, np.uint8), cv2.IMREAD_COLOR)
-            # print("image", image)
-
-            # self.picture_pub.publish(self.cv_bridge.cv2_to_compressed_imgmsg(image, 'bgr8'))
-            # self.picture_pub.publish(self.cv_bridge.cv2_to_compressed_imgmsg(image))
-            msg = CompressedImage()
-            msg.header.stamp = rospy.Time.now()
-            msg.format = "jpeg"
-            msg.data = picture
-
-            self.picture_pub.publish(msg)
+            self.image_msg.header.stamp = ros_time
+            self.image_msg.data = picture
+            self.picture_pub.publish(self.image_msg)
 
             
 
