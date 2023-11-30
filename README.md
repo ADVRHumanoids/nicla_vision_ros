@@ -1,12 +1,57 @@
-# niclabox
-Software for using the NICLABOX
+# NICLABOX
+This software allows to use the Arduino Nicla Vision to stream the recorded picture and distance measurement with UDP.
 
-The folder client contains the main.py that should be put on the nicla.
+The client is the Arduino Nicla Vision, and it streams to a server that can be any PC running Windows or Linux.
+
+The code is written in Python and it is oprimised for maximum speed of transmission.
+
+## Client setup
+We are going to run a MicroPython script on the Arduino Nicla Vision:
+- Start your Arduino Nicla Vision and install the latestrelease firmware ad described [in the official tutorial](https://docs.arduino.cc/tutorials/nicla-vision/getting-started).
+- Connect your Arduino Nicla Vision to the PC and open the internal volume.
+- Overwrite the default main.py with the one provided in ```client/main.py```.
+
+To connect your Arduino Nicla Vision to the Wi-Fi and stream towards your server:
+- Connect the PC that will be running the server to the Wi-Fi and get its IP.
+- Open the new main.py in the internal volume of your Arduino Nicla Vision and fill in the following constants: ```ssid = "YourNetworkSSID"```, ```password = "YourNetworkPassword"```, ```ip = "YourServerIP"```
+- Save and close, then disconnect the Arduino Nicla Vision from the PC.
+
+Now when you power your Arduino Nicla Vision it will automatically connect to the network and it will start streaming to the server.
 
 
-- clone the repo in you catkin workspace
-- build your worksapce (catkin_make or catkin build)
-- launch niclabox_server
+## Server setup: without ROS
+With the file ```scripts/niclabox_server_teleoperation.py``` we provide code that allows to visualise the stream without using ROS. This is especially useful to use the Arduino Nicla Vision in a teleoperation setup.
+
+On your server machine, you need to have installed:
+- Python with pip
+- numpy: ```pip install numpy```
+- OpenCV: ```pip install opencv-python```
+
+Get the IP of the server machine, open ```scripts/niclabox_server_teleoperation.py``` and fill in the following constant: ```ip = "YourServerIP"```.
+
+Then run ```scripts/niclabox_server_teleoperation.py``` from a terminal. The distance will be printed in the terminal and the picture will open in a separate window. To close, press the key ```q``` while on the picture resenting the window.
+
+## Server setup: with ROS
+With the other files, we provide a ROS node that allows to publish ```CompressedImage``` and ```Range``` messages with the received data from the Arduino Nicla Vision.
+
+To install the node:
+- Change directory to your catkin workspace folder and clone the repository: ```git clone https://github.com/edodelbianco/niclabox.git```
+- Build your worksapce: ```catkin_make```
+- Launch niclabox_server
 ```bash
 roslaunch niclabox niclabox_server parameter:=value
 ```
+For making your life easier when launching the node, you can edit the default parameters of the launch file.
+## Table of Contents
+
+- [Getting Started](#getting-started)
+  - [Dependencies](#dependencies)
+  - [Setup](#setup)
+- [Usage](#usage)
+  - [Artifacts Mapping](#1-artifact-mapping)
+  - [Artifacts Rviz UI](#2-artifacts-rviz-ui)
+  - [Artifacts Docker](#3-artifacts-mapping-docker)
+- [License](#license)
+- [Authors](#authors)
+
+
