@@ -17,17 +17,16 @@ from vl53l1x import VL53L1X
 
 
 # wifi ssid and password
-ssid = "edb"
-password = "pitagora"
-# ssid = "TIM-36282322"
-# password = "7kDqVHcfyeypvcQT"
+ssid = "YourNetworkSSID"
+password = "YourNetworkPassword"
+
 
 # server address and port
-ip = "192.168.61.112"
-port = 8000
+ip = "YourServerIP"
+port = 8002
 
 # sensing settings
-picture_quality = 50
+picture_quality = 30
 
 ### warning settings
 verbose = True
