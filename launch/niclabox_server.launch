@@ -1,18 +1,18 @@
 <?xml version="1.0" ?>
 <launch>
 
-    <arg name="server_ip" default="192.168.61.112" />
+    <arg name="server_ip" default="YourServerIP" />
+    <arg name="niclabx_distance_tf" default="world" />
     <arg name="server_port" default="8002" />
     <arg name="distance_topic" default="niclabox/distance" />
     <arg name="picture_topic" default="niclabox/picture/compressed" />
-    <arg name="niclabx_distance_tf" default="world" />
 
     <node name="niclabox_server" pkg="niclabox" type="niclabox_server.py" output="screen" respawn="false" >
         <param name="server_ip" value="$(arg server_ip)" />
+        <param name="niclabx_distance_tf" value="$(arg niclabx_distance_tf)" />
         <param name="server_port" value="$(arg server_port)" />
         <param name="distance_topic" value="$(arg distance_topic)" />
         <param name="picture_topic" value="$(arg picture_topic)" />
-        <param name="niclabx_distance_tf" value="$(arg niclabx_distance_tf)" />
     </node>
 
 </launch>
