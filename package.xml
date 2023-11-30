@@ -5,10 +5,12 @@
   <description>The niclabox package</description>
 
   <maintainer email="delbianco.edoardo@gmail.com">Edoardo Del Bianco</maintainer>
+  <maintainer email="rollo.f96@gmail.com">Federico Rollo</maintainer>
+
+  <author email="delbianco.edoardo@gmail.com">Edoardo Del Bianco</author>
+  <author email="rollo.f96@gmail.com">Federico Rollo</author>
 
   <license>BSD</license>
-
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
 
   <buildtool_depend>catkin</buildtool_depend>
 
