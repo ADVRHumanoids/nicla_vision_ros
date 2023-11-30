@@ -1,4 +1,4 @@
-# NICLABOX
+ # NICLABOX
 This software allows to use the Arduino Nicla Vision to stream the recorded picture and distance measurement with UDP.
 
 The client is the Arduino Nicla Vision, and it streams to a server that can be any PC running Windows or Linux.
@@ -19,7 +19,7 @@ To connect your Arduino Nicla Vision to the Wi-Fi and stream towards your server
 Now when you power your Arduino Nicla Vision it will automatically connect to the network and it will start streaming to the server.
 
 
-## Server setup: without ROS
+## Teleoperation server
 With the file ```scripts/niclabox_server_teleoperation.py``` we provide code that allows to visualise the stream without using ROS. This is especially useful to use the Arduino Nicla Vision in a teleoperation setup.
 
 On your server machine, you need to have installed:
@@ -31,27 +31,50 @@ Get the IP of the server machine, open ```scripts/niclabox_server_teleoperation.
 
 Then run ```scripts/niclabox_server_teleoperation.py``` from a terminal. The distance will be printed in the terminal and the picture will open in a separate window. To close, press the key ```q``` while on the picture resenting the window.
 
-## Server setup: with ROS
+## ROS Server
 With the other files, we provide a ROS node that allows to publish ```CompressedImage``` and ```Range``` messages with the received data from the Arduino Nicla Vision.
 
 To install the node:
-- Change directory to your catkin workspace folder and clone the repository: ```git clone https://github.com/edodelbianco/niclabox.git```
-- Build your worksapce: ```catkin_make```
-- Launch niclabox_server
+- Clone the repository:
 ```bash
-roslaunch niclabox niclabox_server parameter:=value
+cd ~/catkin_ws/src
+git clone https://github.com/edodelbianco/niclabox.git
 ```
-For making your life easier when launching the node, you can edit the default parameters of the launch file.
-## Table of Contents
+- Build your worksapce:
+```bash
+cd ~/catkin_ws
+catkin_make -DCATKIN_WHITELIST_PACKAGES="niclabox"
+```
 
-- [Getting Started](#getting-started)
-  - [Dependencies](#dependencies)
-  - [Setup](#setup)
-- [Usage](#usage)
-  - [Artifacts Mapping](#1-artifact-mapping)
-  - [Artifacts Rviz UI](#2-artifacts-rviz-ui)
-  - [Artifacts Docker](#3-artifacts-mapping-docker)
-- [License](#license)
-- [Authors](#authors)
+To run the node:
+```bash
+roslaunch niclabox niclabox_server server_ip:=YourServerIP
+```
+- To run without having to pass arguments, change as needed the default settings (most likely the IP of the server and the TF of the distance sensor on the Arduino Nicla Vision) by editing the file ```niclabox/launch/niclabox_server.launch```:
+```bash
+<arg name="server_ip" default="YourServerIP" />
+<arg name="niclabx_distance_tf" default="world" />
+```
+and then run:
+```bash
+roslaunch niclabox niclabox_server
+```
 
+## License
+Distributed under the BSD-3-Clause License. See LICENSE for more information.
 
+## Citation
+if you use this work or take inspiration from it, please cite:
+```bash
+@inproceedings{delbianco2024dagana,
+  title={},
+  author={},
+  booktitle={},
+  year={}
+}
+```
+
+## Authors
+This software is provided by:
+- [Edoardo Del Bianco](https://github.com/edodelbianco)
+- [Federio Rollo](https://github.com/FedericoRollo)
