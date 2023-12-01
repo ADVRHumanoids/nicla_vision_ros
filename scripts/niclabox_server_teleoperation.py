@@ -30,7 +30,7 @@
 
 
 # receiving distance and picture from Arduino Nicla Vision (client)
-# and sending them on two ROS messages
+# and showing them using the terminal, numpy and OpenCV
 # the picture fits into one UDP packet after compression
 
 import time
@@ -57,19 +57,21 @@ def receive_and_ros():
     if len(packet) < 100: # a small packet is the distance
         distance = packet
         distance = int.from_bytes(distance, "big")
-        
+
+        # Print distance in terminal
         print("Distance (mm): ", distance)           
 
     else:
         picture = packet
        
+        # Show image with numpy OpenCV
         image = cv2.imdecode(np.frombuffer(picture, np.uint8), cv2.IMREAD_COLOR)
         cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
         cv2.imshow("niclabox", image)
-        if cv2.waitKey(1) == ord('q'):
+        if cv2.waitKey(1) == ord('q'): # Press Q to exit
             exit(0)
 
-        # uncomment to output to a file without using OpenCV and numpy
+        # uncomment to output to a file without using numpy and OpenCV
         # distance_file = open("distance.txt", "w")
         # distance_file.write(str(distance))
         # distance_file.close()
