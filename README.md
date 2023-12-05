@@ -38,7 +38,7 @@ To install the node, on an Linux Ubuntu machine with ROS 1 installed:
 - Clone the repository:
 ```bash
 cd ~/catkin_ws/src
-git clone https://github.com/edodelbianco/niclabox.git
+git clone https://github.com/LeoBoticsHub/niclabox.git
 ```
 - Build your worksapce:
 ```bash
