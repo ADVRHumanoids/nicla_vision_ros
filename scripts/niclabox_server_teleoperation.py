@@ -46,6 +46,9 @@ port = 8002
 # set maximum packet size
 packet_size = 65540
 
+# image window init
+cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
+
 # server socket init 
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((ip, port))
