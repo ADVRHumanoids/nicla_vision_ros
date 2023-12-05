@@ -42,6 +42,7 @@ import time
 import socket
 import network
 import sensor
+import gc
 from machine import LED
 from machine import I2C
 from vl53l1x import VL53L1X
@@ -57,10 +58,10 @@ ip = "YourServerIP"
 port = 8002
 
 # sensing settings
-picture_quality = 30
+picture_quality = 40 # going higher than 40 creates ENOMEM error (led green)
 
 # warning settings
-verbose = True
+verbose = False
 error_timeout = 5 # seconds to display error warning led
 
 # error handeling init
@@ -71,6 +72,7 @@ error_unforseen = LED("LED_GREEN")
 error_quality = LED("LED_RED")
 
 # camera init
+gc.collect()
 sensor.reset()
 sensor.set_framesize(sensor.QVGA)
 sensor.set_pixformat(sensor.RGB565)
