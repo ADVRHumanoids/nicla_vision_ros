@@ -42,7 +42,6 @@ import time
 import socket
 import network
 import sensor
-import gc
 from machine import LED
 from machine import I2C
 from vl53l1x import VL53L1X
@@ -72,7 +71,6 @@ error_unforseen = LED("LED_GREEN")
 error_quality = LED("LED_RED")
 
 # camera init
-gc.collect()
 sensor.reset()
 sensor.set_framesize(sensor.QVGA)
 sensor.set_pixformat(sensor.RGB565)
