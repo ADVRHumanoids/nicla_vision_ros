@@ -7,7 +7,7 @@ The code is written in Python and it is oprimised for maximum speed of transmiss
 
 ## Client setup
 We are going to run a MicroPython script on the Arduino Nicla Vision:
-- Start your Arduino Nicla Vision and install the latestrelease firmware ad described [in the official tutorial](https://docs.arduino.cc/tutorials/nicla-vision/getting-started).
+- Start your Arduino Nicla Vision and install the latest release firmware ad described [in the official tutorial](https://docs.arduino.cc/tutorials/nicla-vision/getting-started).
 - Connect your Arduino Nicla Vision to the PC and open the internal volume.
 - Overwrite the default main.py with the one provided in ```client/main.py```.
 
@@ -16,11 +16,11 @@ To connect your Arduino Nicla Vision to the Wi-Fi and stream towards your server
 - Open the new main.py in the internal volume of your Arduino Nicla Vision and fill in the following constants: ```ssid = "YourNetworkSSID"```, ```password = "YourNetworkPassword"```, ```ip = "YourServerIP"```
 - Save and close, then disconnect the Arduino Nicla Vision from the PC.
 
-Now when you power your Arduino Nicla Vision it will automatically connect to the network and it will start streaming to the server.
+Now when you power on your Arduino Nicla Vision it will automatically connect to the network and it will start streaming to the server.
 
 
 ## Teleoperation server
-With the file ```scripts/niclabox_server_teleoperation.py``` we provide code that allows to visualise the stream without using ROS. This is especially useful to use the Arduino Nicla Vision in a teleoperation setup.
+With the file ```scripts/niclabox_server_teleoperation.py``` we provide code that allows to visualise the stream without using ROS. This is especially useful to use the Arduino Nicla Vision in a teleoperation setup, even with a Microsoft Windows machine.
 
 On your server machine, you need to have installed:
 - Python with pip
@@ -34,7 +34,7 @@ Then run ```scripts/niclabox_server_teleoperation.py``` from a terminal. The dis
 ## ROS Server
 With the other files, we provide a ROS node that allows to publish ```CompressedImage``` and ```Range``` messages with the received data from the Arduino Nicla Vision.
 
-To install the node:
+To install the node, on an Linux Ubuntu machine with ROS 1 installed:
 - Clone the repository:
 ```bash
 cd ~/catkin_ws/src
