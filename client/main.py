@@ -57,7 +57,7 @@ ip = "YourServerIP"
 port = 8002
 
 # sensing settings
-picture_quality = 40 # going higher than 40 creates ENOMEM error (led green)
+picture_quality = 30 # going higher than 30 creates ENOMEM error (led green)
 
 # warning settings
 verbose = False
