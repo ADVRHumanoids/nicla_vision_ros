@@ -29,7 +29,7 @@ On your server machine, you need to have installed:
 
 Get the IP of the server machine, open ```scripts/niclabox_server_teleoperation.py``` and fill in the following constant: ```ip = "YourServerIP"```.
 
-Then run ```scripts/niclabox_server_teleoperation.py``` from a terminal. The distance will be printed in the terminal and the picture will open in a separate window. To close, press the key ```q``` while on the picture resenting the window.
+Then run ```scripts/niclabox_server_teleoperation.py``` from a terminal. The distance will be printed in the terminal and the picture will open in a separate window. To close, press the key ```q``` while you are on the window presenting the picture.
 
 ## ROS Server
 With the other files, we provide a ROS node that allows to publish ```CompressedImage``` and ```Range``` messages with the received data from the Arduino Nicla Vision.
