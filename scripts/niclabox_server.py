@@ -54,6 +54,7 @@ class Server:
         self.server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((ip, port))
+        self.server.setblocking(False)
         rospy.loginfo("Waiting for niclabox to stream on " + ip + " : " + str(port))
 
         distance_topic = rospy.get_param("~distance_topic")
@@ -74,9 +75,16 @@ class Server:
 
 
     def receive_and_ros(self):
+
         # receive distance value
-        packet, _ = self.server.recvfrom(self.packet_size)
+        try:
+            packet, _ = self.server.recvfrom(self.packet_size)
+        except socket.timeout as e:
+            rospy.logerr(e)
+
         ros_time = rospy.Time.now()
+
+        rospy.logwarn(len(packet))
 
         if len(packet) < 100: # a small packet is the distance
             distance = packet
