@@ -40,7 +40,7 @@ import cv2
 
 
 # server address and port (the address of the machine running this code, any available port)
-ip = "YourServerIP"
+ip = "10.24.4.77"
 port = 8002
 
 # set maximum packet size
@@ -51,6 +51,7 @@ cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
 
 # server socket init 
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+#server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
 server.bind((ip, port))
 print("Waiting for niclabox to stream on", ip, ":", port)
 
