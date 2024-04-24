@@ -46,21 +46,35 @@ from machine import LED
 from machine import I2C
 from vl53l1x import VL53L1X
 
+def connect():
+    if verbose == True:
+        print("Connecting to wifi network", ssid)
+    wlan.active(False)
+    time.sleep(2)
+    wlan.active(True)
+    wlan.connect(ssid, password)
+    while not wlan.isconnected():
+        error_network.on()
+        time.sleep(1)
+    error_network.off()
+    if verbose == True:
+        print(wlan.ifconfig())
+
 
 # wifi ssid and password
-ssid = "YourNetworkSSID"
-password = "YourNetworkPassword"
+ssid = "Centauro01WLAN"
+password = "pitagora"
 
 
 # server address and port
-ip = "YourServerIP"
-port = 8002
+ip = "10.24.4.77"
+port = 8004
 
 # sensing settings
-picture_quality = 30 # going higher than 30 creates ENOMEM error (led green)
+picture_quality = 20 # going higher than 30 creates ENOMEM error (led green)
 
 # warning settings
-verbose = False
+verbose = True
 error_timeout = 5 # seconds to display error warning led
 
 # error handeling init
@@ -80,26 +94,21 @@ tof = VL53L1X(I2C(2))
 
 # wifi init
 wlan = network.WLAN(network.STA_IF)
+wlan.active(True)
+wlan.connect(ssid, password)
+
+while not wlan.isconnected():
+    print('Trying to connect to "{:s}"...'.format(SSID))
+    time.sleep_ms(1000)
+
+# We should have a valid IP now via DHCP
+print("WiFi Connected ", wlan.ifconfig())
 
 # transmission init
 distance_size = 4 # size for conversion of distance from Int to bytes
 packet_size = 65000 # safely less than 65540 that is the maximum for UDP
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-
-def connect():
-    if verbose == True:
-        print("Connecting to wifi network", ssid)
-    wlan.active(False)
-    time.sleep(2)
-    wlan.active(True)
-    wlan.connect(ssid, password)
-    while not wlan.isconnected():
-        error_network.on()
-        time.sleep(1)
-    error_network.off()
-    if verbose == True:
-        print(wlan.ifconfig())
 
 def sense_and_send():
 

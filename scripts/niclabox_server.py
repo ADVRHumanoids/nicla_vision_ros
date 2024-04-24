@@ -36,8 +36,11 @@
 import socket
 
 import rospy
-from sensor_msgs.msg import CompressedImage
+from sensor_msgs.msg import CompressedImage, Image, CameraInfo
 from sensor_msgs.msg import Range
+from cv_bridge import CvBridge, CvBridgeError
+import cv2
+import numpy as np
 
 class Server:
 
@@ -54,14 +57,19 @@ class Server:
         self.server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind((ip, port))
-        self.server.setblocking(False)
         rospy.loginfo("Waiting for niclabox to stream on " + ip + " : " + str(port))
 
         distance_topic = rospy.get_param("~distance_topic")
-        picture_topic = rospy.get_param("~picture_topic")
+        self.picture_topic = rospy.get_param("~picture_topic")
+        self.image_raw_topic = rospy.get_param("~image_raw_topic")
+        camera_info_topic = rospy.get_param("~camera_info_topic")
 
         self.distance_pub = rospy.Publisher(distance_topic, Range, queue_size=5)
-        self.picture_pub  = rospy.Publisher(picture_topic, CompressedImage, queue_size=5)
+        if self.picture_topic != "":
+            self.picture_pub  = rospy.Publisher(self.picture_topic, CompressedImage, queue_size=5)
+        if self.image_raw_topic != "":
+            self.image_raw_pub  = rospy.Publisher(self.image_raw_topic, Image, queue_size=5)
+        self.camera_info_pub  = rospy.Publisher(camera_info_topic, CameraInfo, queue_size=5)
 
         self.range_msg = Range()
         self.range_msg.header.frame_id = rospy.get_param("~niclabx_distance_tf")
@@ -73,18 +81,20 @@ class Server:
         self.image_msg = CompressedImage()
         self.image_msg.format = "jpeg"
 
+        self.image_raw_msg = Image()
+        self.camera_info_msg = CameraInfo()
+
+    #     self.set_camera_info = rospy.Service('/niclabox/picture/set_camera_info', CameraInfo, self.handle_set_camera_info)
+
+
+    # def handle_set_camera_info(self, msg):
+    #     print(msg)
+
 
     def receive_and_ros(self):
-
         # receive distance value
-        try:
-            packet, _ = self.server.recvfrom(self.packet_size)
-        except socket.timeout as e:
-            rospy.logerr(e)
-
+        packet, _ = self.server.recvfrom(self.packet_size)
         ros_time = rospy.Time.now()
-
-        rospy.logwarn(len(packet))
 
         if len(packet) < 100: # a small packet is the distance
             distance = packet
@@ -99,11 +109,55 @@ class Server:
         else:  # a big packet is the picture
 
             picture = packet
-           
-            self.image_msg.header.stamp = ros_time
-            self.image_msg.data = picture
-            self.picture_pub.publish(self.image_msg)
 
+            ### PUBLISH COMPRESSED
+            if self.picture_topic != "":
+                self.image_msg.header.stamp = ros_time
+                self.image_msg.data = picture
+                self.picture_pub.publish(self.image_msg)
+
+            
+            ### PUBLISH IMG RAW
+            if self.image_raw_topic != "":
+                # Convert the byte array to a numpy array
+                nparr = np.frombuffer(picture, np.uint8)
+
+                # Decode the compressed image
+                img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
+
+                #To visualize the received img converted in img_raw 
+                # cv2.imshow("Visualize img_raw", img_raw)
+                # cv2.waitKey(1) 
+
+                # Fill in the header
+                self.image_raw_msg.header.stamp = ros_time
+                self.image_raw_msg.header.frame_id = "nicla"   
+
+                # Fill in image height and width
+                self.image_raw_msg.height = img_raw.shape[0]
+                self.image_raw_msg.width = img_raw.shape[1]
+
+                # Fill in encoding
+                self.image_raw_msg.encoding = "bgr8"  # Assuming OpenCV returns BGR format
+
+                # Fill in endianness and step
+                self.image_raw_msg.is_bigendian = 0  # Not big endian
+                self.image_raw_msg.step = img_raw.shape[1] * 3  # Width * number of channels
+
+                # Convert the OpenCV image to ROS Image format using cv_bridge
+                bridge = CvBridge()
+                try:
+                    self.image_raw_msg.data = bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
+                except CvBridgeError as e:
+                    print(e)                
+
+                # Publish the ROS Image message
+                self.image_raw_pub.publish(self.image_raw_msg)
+
+            ### PUBLISH CAMERA INFO
+            self.camera_info_msg.header.stamp = ros_time
+            self.camera_info_pub.publish(self.camera_info_msg)
+ 
             
 
 

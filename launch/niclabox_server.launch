@@ -1,23 +1,25 @@
 <?xml version="1.0" ?>
 <launch>
 
-
-    <arg name="gdb" default="false" />
-    <arg if="$(arg gdb)" name="launch-prefix" value="xterm -e gdb --args"/>
-    <arg unless="$(arg gdb)" name="launch-prefix" value=""/>
-
-    <arg name="server_ip" default="10.24.4.77" />
+    <arg name="server_ip" default="10.240.23.87" />
     <arg name="niclabx_distance_tf" default="world" />
     <arg name="server_port" default="8002" />
     <arg name="distance_topic" default="niclabox/distance" />
-    <arg name="picture_topic" default="niclabox/picture/compressed" />
+    <arg name="camera_info_topic" default="niclabox/picture/camera_info" />
 
-    <node name="niclabox_server" pkg="niclabox" type="niclabox_server.py" output="screen" respawn="false" launch-prefix="$(arg launch-prefix)">
+    <!-- If not interested in publishing picture topic or image_raw_topic set the default value as "" --> 
+    <arg name="picture_topic" default="niclabox/picture/compressed" />
+    <arg name="image_raw_topic" default="niclabox/picture/image_raw" /> 
+    
+
+    <node name="niclabox_server" pkg="niclabox" type="niclabox_server.py" output="screen" respawn="false" >
         <param name="server_ip" value="$(arg server_ip)" />
         <param name="niclabx_distance_tf" value="$(arg niclabx_distance_tf)" />
         <param name="server_port" value="$(arg server_port)" />
         <param name="distance_topic" value="$(arg distance_topic)" />
         <param name="picture_topic" value="$(arg picture_topic)" />
+        <param name="image_raw_topic" value="$(arg image_raw_topic)" />
+        <param name="camera_info_topic" value="$(arg camera_info_topic)" />
     </node>
 
 </launch>
