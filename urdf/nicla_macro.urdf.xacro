@@ -1,0 +1,107 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://ros.org/wiki/xacro">
+
+<xacro:arg name="nicla_camera" default="true"/>
+<xacro:arg name="nicla_tof" default="true"/>
+<xacro:arg name="nicla_tof_visualize" default="true"/>
+<xacro:arg name="nicla_imu" default="false"/> <!-- TODO -->
+
+<xacro:property name="NICLA_CAMERA" value="$(arg nicla_camera)" />
+<xacro:property name="NICLA_TOF" value="$(arg nicla_tof)" />
+<xacro:property name="nicla_tof_visualize" value="$(arg nicla_tof_visualize)" />
+
+<xacro:property name="NICLA_IMU" value="$(arg nicla_imu)" /> <!-- TODO -->
+
+<xacro:macro name="nicla_box" params="name:=nicla parent_link *origin">
+
+    <link name="${name}_base"></link>
+  	<joint name="${parent_link}_to_${name}_base" type="fixed">
+    	<xacro:insert_block name="origin"/>
+        <parent link="${parent_link}"/>
+        <child link="${name}_base"/>
+    </joint>
+
+    <xacro:if value="${NICLA_CAMERA}">
+        <link name="${name}_camera"></link>  
+        <joint name="${name}_base_to_camera" type="fixed">
+            <origin xyz="0 0 0" rpy="0 0 0"/>
+            <parent link="${name}_base"/>
+            <child link="${name}_camera"/>
+        </joint>
+
+        <!-- gazebo simulated camera -->
+        <gazebo reference="${name}_camera">
+        <sensor type="camera" name="${name}_camera">
+        <update_rate>30.0</update_rate>
+        <camera name="${name}_camera">
+            <horizontal_fov>0.69813</horizontal_fov>  <!-- 80deg 1.39626rad-->
+            <image>
+                <width>1616</width>
+                <height>1232</height>
+                <format>R8G8B8</format>
+            </image>
+            <clip>
+                <near>0.1</near>
+                <far>100</far>
+          </clip>
+        </camera>
+        <plugin name="gazebo_ros_${name}_camera_controller" filename="libgazebo_ros_camera.so">
+            <alwaysOn>true</alwaysOn>
+            <updateRate>0.0</updateRate>
+            <cameraName>${name}/camera</cameraName>
+            <imageTopicName>image_raw</imageTopicName>
+            <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+            <frameName>${name}_camera</frameName>
+        </plugin>
+        </sensor>
+        </gazebo>
+
+    </xacro:if>
+
+    <xacro:if value="${NICLA_TOF}">
+        <link name="${name}_tof"></link>  
+        <joint name="${name}_base_to_tof" type="fixed">
+            <origin xyz="0 0 0" rpy="0 ${-PI/2} 0"/>
+            <parent link="${name}_base"/>
+            <child link="${name}_tof"/>
+        </joint>
+
+        <!-- gazebo simulated tof -->
+        <gazebo reference="${name}_tof">
+        <sensor type="ray" name="${name}_tof">
+        <pose>0 0 0 0 0 0</pose>
+        <visualize>${nicla_tof_visualize}</visualize>
+        <update_rate>60</update_rate>
+        <ray>
+            <scan>
+            <horizontal>
+                <samples>1</samples>
+                <resolution>1</resolution>
+                <min_angle>0</min_angle>
+                <max_angle>0</max_angle>
+            </horizontal>
+            </scan>
+            <range>
+            <min>0.04</min>
+            <max>3</max>
+            <resolution>0.03</resolution>
+            </range>
+            <!-- <noise>
+                <type>gaussian</type>
+                <mean>0.0</mean>
+                <stddev>0.01</stddev>
+            </noise> -->
+        </ray>
+        <plugin name="gazebo_ros_${name}_tof_controller" filename="libgazebo_ros_laser.so">
+            <topicName>${name}/tof</topicName>
+            <frameName>${name}_tof</frameName>
+        </plugin>
+        </sensor>
+        </gazebo>
+
+    </xacro:if>
+
+</xacro:macro>
+
+</robot>
+
