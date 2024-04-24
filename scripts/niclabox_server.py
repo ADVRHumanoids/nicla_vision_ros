@@ -86,7 +86,6 @@ class Server:
 
     #     self.set_camera_info = rospy.Service('/niclabox/picture/set_camera_info', CameraInfo, self.handle_set_camera_info)
 
-
     # def handle_set_camera_info(self, msg):
     #     print(msg)
 

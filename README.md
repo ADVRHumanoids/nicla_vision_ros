@@ -1,9 +1,14 @@
- # NICLABOX
+# NICLABOX
 This software allows to use the Arduino Nicla Vision to stream the recorded picture and distance measurement with UDP.
 
 The client is the Arduino Nicla Vision, and it streams to a server that can be any PC running Windows or Linux.
 
-The code is written in Python and it is oprimised for maximum speed of transmission.
+The code is written in Python and it is optimised for maximum speed of transmission.
+
+## Devel-damigas branch changes
+In scripts/niclabox_server.py, two topics have been added, i.e. image_raw_topic and camera_info_topic, parametrized in the launch/niclabox_server.launch file: 
+- image_raw_topic = niclabox/picture/image_raw streams the raw image
+- camera_info_topic = niclabox/picture/camera_info streams the parameters of the camera (camera matrix, projection matrix, distortion_coefficients, rectification matrix)
 
 ## Client setup
 We are going to run a MicroPython script on the Arduino Nicla Vision:
