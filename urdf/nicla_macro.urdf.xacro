@@ -14,7 +14,20 @@
 
 <xacro:macro name="nicla_box" params="name:=nicla parent_link *origin">
 
-    <link name="${name}_base"></link>
+    <link name="${name}_base">
+        <visual>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.001 0.01 0.01"/>
+            </geometry> 
+        </visual>
+        <collision>
+            <origin xyz="0 0 0" rpy="0 0 0" />
+            <geometry>
+                <box size="0.001 0.01 0.01"/>
+            </geometry>
+        </collision> 
+    </link>
   	<joint name="${parent_link}_to_${name}_base" type="fixed">
     	<xacro:insert_block name="origin"/>
         <parent link="${parent_link}"/>
@@ -43,7 +56,16 @@
             <clip>
                 <near>0.1</near>
                 <far>100</far>
-          </clip>
+            </clip>
+            <!-- <lens>
+                <intrinsics>
+                    <fx>439.597550</fx>
+                    <fy>439.597550</fy>
+                    <cx>166.12451</cx>
+                    <cy>104.41054</cy>
+                    <s>0</s>
+                </intrinsics>
+            </lens> -->
         </camera>
         <plugin name="gazebo_ros_${name}_camera_controller" filename="libgazebo_ros_camera.so">
             <alwaysOn>true</alwaysOn>
@@ -53,16 +75,26 @@
             <cameraInfoTopicName>camera_info</cameraInfoTopicName>
             <frameName>${name}_camera</frameName>
 
-            <hackBaseline>0.0</hackBaseline> <!-- Set to 0.0 -->
-            <distortionK1>0.176808</distortionK1> <!-- Set to your k1 value -->
-            <distortionK2>-0.590488</distortionK2> <!-- Set to your k2 value -->
-            <distortionK3>0.0</distortionK3> <!-- Set to your k3 value -->
-            <distortionT1>-0.008412</distortionT1> <!-- Set to your p1 value -->
-            <distortionT2>0.015473</distortionT2> <!-- Set to your p2 value -->
-            <CxPrime>166.12451</CxPrime> <!-- Set to 0 -->
-            <Cx>166.12451</Cx> <!-- Set to your Cx value -->
-            <Cy>104.41054</Cy> <!-- Set to your Cy value -->
-            <focalLength>439.597550</focalLength> <!-- Set to your focal length value--> 
+            <!-- Set to 0.0 -->
+            <!-- <hackBaseline>0.0</hackBaseline>  -->
+            <!-- Set to your k1 value -->
+            <!-- <distortionK1>0.176808</distortionK1>  -->
+            <!-- Set to your k2 value -->
+            <!-- <distortionK2>-0.590488</distortionK2>  -->
+            <!-- Set to your k3 value -->
+            <!-- <distortionK3>0.0</distortionK3>  -->
+            <!-- Set to your p1 value -->
+            <!-- <distortionT1>-0.008412</distortionT1>  -->
+            <!-- Set to your p2 value -->
+            <!-- <distortionT2>0.015473</distortionT2>  -->
+            <!-- Set to 0 -->
+            <!-- <CxPrime>166.12451</CxPrime>  -->
+            <!-- Set to your Cx value -->
+            <!-- <Cx>166.12451</Cx>  -->
+            <!-- Set to your Cy value -->
+            <!-- <Cy>104.41054</Cy>  -->
+            <!-- Set to your focal length value--> 
+            <!-- <focalLength>439.597550</focalLength>  -->
 
         <!-- 
         Camera matrix K: 
@@ -93,7 +125,7 @@
     <xacro:if value="${NICLA_TOF}">
         <link name="${name}_tof"></link>  
         <joint name="${name}_base_to_tof" type="fixed">
-            <origin xyz="0 0 0" rpy="0 ${-PI/2} 0"/>
+            <origin xyz="0 0 0" rpy="0 0 0"/>
             <parent link="${name}_base"/>
             <child link="${name}_tof"/>
         </joint>
