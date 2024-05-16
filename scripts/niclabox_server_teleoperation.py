@@ -37,6 +37,14 @@ import time
 import socket
 import numpy as np
 import cv2
+from pydub import AudioSegment
+
+IMAGE_TYPE = 0b00
+AUDIO_TYPE = 0b01
+DISTANCE_TYPE = 0b10
+
+FLAG = 1
+accumulated_audio_data = []
 
 
 # server address and port (the address of the machine running this code, any available port)
@@ -55,16 +63,22 @@ server.bind((ip, port))
 print("Waiting for niclabox to stream on", ip, ":", port)
 
 def receive_and_ros():
+    global FLAG 
+
     packet, client_address = server.recvfrom(packet_size)
 
-    if len(packet) < 100: # a small packet is the distance
+    data_type = packet[0]
+    packet = packet[1:]
+ 
+    # if len(packet) < 100: # a small packet is the distance
+    if data_type == DISTANCE_TYPE:
         distance = packet
         distance = int.from_bytes(distance, "big")
 
         # Print distance in terminal
         print("Distance (mm): ", distance)           
 
-    else:
+    elif data_type == IMAGE_TYPE:
         picture = packet
        
         # Show image with numpy OpenCV
@@ -81,6 +95,28 @@ def receive_and_ros():
         # picture_file = open("picture.jpg", "wb")
         # picture_file.write(picture)
         # picture_file.close()
+    elif data_type == AUDIO_TYPE:
+
+        if FLAG == 1:
+            # Convert PCM data to numpy array
+            # pcm_data = np.array(packet, dtype=np.int16)
+            pcm_data = np.frombuffer(packet, dtype=np.int16)
+            accumulated_audio_data.append(pcm_data)
+
+            if len(accumulated_audio_data) > 100:
+                FLAG = 2
+
+        elif FLAG == 2:
+            pcm_data = np.concatenate(accumulated_audio_data)
+
+            # Create an AudioSegment from the PCM data
+            audio_segment = AudioSegment(pcm_data.tobytes(), frame_rate=16000, sample_width=2, channels=1)
+
+            # Export AudioSegment to an MP3 file
+            audio_segment.export("recording.mp3", format="mp3")
+
+            FLAG = 0
+
 
     
 while True:
