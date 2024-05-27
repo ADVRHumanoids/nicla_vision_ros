@@ -1,3 +1,4 @@
 *.vscode
 *.kdev
+*.kdev4
 __pycache__/

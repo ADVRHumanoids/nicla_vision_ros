@@ -14,7 +14,7 @@ class NiclaReceiverUDP:
 
         #receiving data
         self.distance = 0
-        self.image = 0
+        self.image = bytes()
         self.audio_deque = deque([], maxlen=audio_buffer)
 
     def connect(self):
@@ -28,14 +28,12 @@ class NiclaReceiverUDP:
     def receive(self):
 
         packet, _ = self.server.recvfrom(self.packet_size)
-
+        
         data_type = packet[0]
         data = packet[1:]
     
         if data_type == DISTANCE_TYPE:
             self.distance = int.from_bytes(data, "big")
-
-            print("Distance (mm): ", self.distance)           
 
         elif data_type == IMAGE_TYPE:
         
@@ -44,7 +42,7 @@ class NiclaReceiverUDP:
 
         elif data_type == AUDIO_TYPE:
 
-                self.audio_deque.append(data)
+            self.audio_deque.append(data)
 
 
 
