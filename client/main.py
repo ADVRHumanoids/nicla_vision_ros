@@ -46,21 +46,31 @@ from machine import LED
 from machine import I2C
 from vl53l1x import VL53L1X
 
+import image
+import audio
+from ulab import numpy as np
+from ulab import utils
+
+# Define data types
+IMAGE_TYPE = 0b00
+AUDIO_TYPE = 0b01
+DISTANCE_TYPE = 0b10
+BYTE_LENGTH = 8
 
 # wifi ssid and password
-ssid = "YourNetworkSSID"
-password = "YourNetworkPassword"
+ssid = "DamianoHotspot"
+password = "DamianoHotspot"
 
 
 # server address and port
-ip = "YourServerIP"
+ip = "10.240.23.87"
 port = 8002
 
 # sensing settings
 picture_quality = 30 # going higher than 30 creates ENOMEM error (led green)
 
 # warning settings
-verbose = False
+verbose = True
 error_timeout = 5 # seconds to display error warning led
 
 # error handeling init
@@ -78,8 +88,32 @@ sensor.set_pixformat(sensor.RGB565)
 # distance sensor init
 tof = VL53L1X(I2C(2))
 
+# microphone
+CHANNELS = 1
+raw_buf = None
+audio_buf = None
+audio.init(channels=CHANNELS, frequency=16000, gain_db=24, highpass=0.9883)
+
+
+def audio_callback(buf):
+    # NOTE: do Not call any function that allocates memory.
+    global raw_buf
+    if raw_buf is None:
+        raw_buf = buf
+
+
+# Start audio streaming
+audio.start_streaming(audio_callback)
+
 # wifi init
 wlan = network.WLAN(network.STA_IF)
+#wlan.ifconfig(("10.240.23.55", "255.255.255.0", "10.240.23.87", "8.8.8.8"))
+#wlan.active(True)
+#wlan.connect("DamianoHotspot", "DamianoHotspot")
+
+#while not wlan.isconnected():
+#    print("Trying to connect to...".format(ssid))
+#    time.sleep_ms(1000)
 
 # transmission init
 distance_size = 4 # size for conversion of distance from Int to bytes
@@ -102,6 +136,7 @@ def connect():
         print(wlan.ifconfig())
 
 def sense_and_send():
+    global raw_buf, audio_buf
 
     # sensing, first distance and then camera that takes time to save in memory
     distance = tof.read() # class int
@@ -120,6 +155,14 @@ def sense_and_send():
     picture.compress(picture_quality) # class Image, bytes readable as jpeg
     picture_size = len(picture) # dimension of the compressed picture
 
+    # audio
+    if raw_buf is not None:
+        audio_buf = raw_buf
+        raw_buf = None
+    else:
+        audio_buf = bytearray([])
+
+
     # printing transmission info and data to transmit
     if verbose == True:
         print("Distance size:", distance_size, "set by the user")
@@ -129,15 +172,21 @@ def sense_and_send():
         print("Picture:")
         print(picture)
 
-    if picture_size > packet_size: # picture too big, skip transmission
+
+    if (picture_size + BYTE_LENGTH > packet_size) or (len(audio_buf)*BYTE_LENGTH + BYTE_LENGTH > packet_size): # picture too big, skip transmission
         raise ValueError
     else:
-        client.sendto(distance, (ip, port))
-        client.sendto(picture, (ip, port))
+#        client.sendto( distance, (ip, port))
+#        client.sendto( picture, (ip, port))
+
+        client.sendto( bytes([DISTANCE_TYPE]) + distance, (ip, port))
+        client.sendto( bytes([IMAGE_TYPE]) + picture, (ip, port))
+        client.sendto( bytes([AUDIO_TYPE]) + audio_buf, (ip, port))
         if verbose == True:
             print("Transmission completed")
 
 connect()
+
 
 while True:
     try:
@@ -158,7 +207,7 @@ while True:
 
     except ValueError as e:
         if verbose == True:
-            print("\033[91mError: the compressed picture is too big. Lower the quality!\033[0m")
+            print("\033[91mError: the compressed picture (or audio) is too big. Lower the quality!\033[0m")
         error = True
         error_time = time.time()
         error_quality.on()
@@ -171,3 +220,7 @@ while True:
         error_time = time.time()
         error_unforseen.on()
         pass
+
+
+# Stop audio streaming
+audio.stop_streaming()
