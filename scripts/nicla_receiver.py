@@ -29,7 +29,8 @@ def run():
     nicla_receiver_udp.receive()
  
     # Print distance
-    print("Distance (mm): ", nicla_receiver_udp.distance)           
+    distance = int.from_bytes(nicla_receiver_udp.distance, "big")
+    print("Distance (mm): ", distance)           
 
     if nicla_receiver_udp.image :
         # Show image with numpy OpenCV

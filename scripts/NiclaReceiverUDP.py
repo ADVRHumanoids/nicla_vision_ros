@@ -13,7 +13,7 @@ class NiclaReceiverUDP:
         self.audio_buffer = audio_buffer
 
         #receiving data
-        self.distance = 0
+        self.distance = bytes()
         self.image = bytes()
         self.audio_deque = deque([], maxlen=audio_buffer)
 
@@ -21,6 +21,8 @@ class NiclaReceiverUDP:
         print("Waiting for niclabox to stream on", self.ip, ":", self.port)
 
         self.server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+        
         self.server.bind((self.ip, self.port))
 
         print("Connected to niclabox!")
@@ -33,7 +35,7 @@ class NiclaReceiverUDP:
         data = packet[1:]
     
         if data_type == DISTANCE_TYPE:
-            self.distance = int.from_bytes(data, "big")
+            self.distance = data
 
         elif data_type == IMAGE_TYPE:
         
