@@ -53,9 +53,7 @@ def run():
         
         print("saving recordings!")
 
-
         audio_data = [nicla_receiver_udp.audio_deque.popleft() for _ in range(len(nicla_receiver_udp.audio_deque))]
-        
         
         accumulated_audio_data = []
         for i in audio_data:

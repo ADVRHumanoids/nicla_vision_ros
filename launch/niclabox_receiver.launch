@@ -1,0 +1,32 @@
+<?xml version="1.0" ?>
+<launch>
+
+    <arg name="nicla_name" default="nicla" />
+    <arg name="receiver_ip" />
+    <arg name="receiver_port" default="8002" />
+    <arg name="packet_size" default="65540" />
+    <arg name="audio_buffer" default="100" />
+
+    <arg name="enable_range" default="true" />
+    <arg name="enable_camera_raw" default="false" />
+    <arg name="enable_camera_compressed" default="true" />
+    <arg name="enable_audio" default="false" />
+    <arg name="enable_audio_stamped" default="false" />
+    <arg name="enable_imu" default="false" />
+    
+    <node name="niclabox_receiver" pkg="niclabox" type="niclabox_receiver_ros.py" output="screen" respawn="false" >
+        <param name="nicla_name" value="$(arg nicla_name)" />
+        <param name="receiver_ip" value="$(arg receiver_ip)" />
+        <param name="receiver_port" value="$(arg receiver_port)" />
+        <param name="packet_size" value="$(arg packet_size)" />
+        <param name="audio_buffer" value="$(arg audio_buffer)" />
+
+        <param name="enable_range" value="$(arg enable_range)" />
+        <param name="enable_camera_raw" value="$(arg enable_camera_raw)" />
+        <param name="enable_camera_compressed" value="$(arg enable_camera_compressed)" />
+        <param name="enable_audio" value="$(arg enable_audio)" />
+        <param name="enable_audio_stamped" value="$(arg enable_audio_stamped)" />
+        <param name="enable_imu" value="$(arg enable_imu)" />
+    </node>
+
+</launch>
