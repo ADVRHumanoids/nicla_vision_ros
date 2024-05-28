@@ -4,7 +4,7 @@
     <arg name="nicla_name" default="nicla" />
     <arg name="receiver_ip" />
     <arg name="receiver_port" default="8002" />
-    <arg name="packet_size" default="65540" />
+    <arg name="packet_size" default="65540" /> 
     <arg name="audio_buffer" default="100" />
 
     <arg name="enable_range" default="true" />
