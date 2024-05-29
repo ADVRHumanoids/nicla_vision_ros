@@ -66,12 +66,12 @@ HEADER_LENGTH = 4+1 #bytes (timestamp size + data type size)
 #BYTE_LENGTH = 8 #bits
 
 # wifi ssid and password
-ssid = "DamianoHotspot"
-password = "DamianoHotspot"
+ssid = "ToriTuringHotspot"
+password = "MerdaCulo"
 
 
 # server address and port
-ip = "10.240.23.49"
+ip = "10.240.23.78"
 port = 8002
 
 # sensing settings
@@ -183,7 +183,6 @@ def sense_and_send():
     gyro_x, gyro_y, gyro_z = lsm.gyro()# Gyroscope
 
     imu_packet = struct.pack('>ffffff', acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z)
-
 
     # converting with known size the IMU
     #    imu_packet = bytearray([])
