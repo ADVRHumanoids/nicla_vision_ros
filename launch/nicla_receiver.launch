@@ -10,11 +10,11 @@
     <arg name="enable_range" default="true" />
     <arg name="enable_camera_raw" default="false" />
     <arg name="enable_camera_compressed" default="true" />
-    <arg name="enable_audio" default="false" />
+    <arg name="enable_audio" default="true" />
     <arg name="enable_audio_stamped" default="false" />
-    <arg name="enable_imu" default="false" />
+    <arg name="enable_imu" default="true" />
     
-    <node name="niclabox_receiver" pkg="niclabox" type="niclabox_receiver_ros.py" output="screen" respawn="false" >
+    <node name="nicla_receiver" pkg="niclabox" type="nicla_receiver_ros.py" output="screen" respawn="false" >
         <param name="nicla_name" value="$(arg nicla_name)" />
         <param name="receiver_ip" value="$(arg receiver_ip)" />
         <param name="receiver_port" value="$(arg receiver_port)" />

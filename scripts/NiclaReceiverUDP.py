@@ -1,95 +1,106 @@
-import socket
+import struct
 import queue
 import socketserver
+from threading import Thread
 
 IMAGE_TYPE = 0b00
 AUDIO_TYPE = 0b01
-DISTANCE_TYPE = 0b10
-
-class NiclaReceiverUDP:
-    def __init__(self, pc_ip, pc_port, packet_size, audio_buffer_size=1000):
-        self.ip = pc_ip
-        self.port = pc_port
-        self.packet_size = packet_size
-
-        #receiving data
-        self.distance = bytes()
-        self.image = bytes()
-        self.audio_buffer = queue.Queue(maxsize=audio_buffer_size)
-        self.imu = bytes()
-
-    def connect(self):
-        print("Waiting for niclabox to stream on", self.ip, ":", self.port)
-
-        self.server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind((self.ip, self.port))
-
-        print("Connected to niclabox!")
-
-    def receive(self):
-
-        packet, _ = self.server.recvfrom(self.packet_size)
-        
-        data_type = packet[0]
-        data = packet[1:]
-    
-        if data_type == DISTANCE_TYPE:
-            self.distance = data
-
-        elif data_type == IMAGE_TYPE:
-        
-            # Show image with numpy OpenCV
-            self.image = data
-
-        elif data_type == AUDIO_TYPE:
-
-            self.audio_deque.append(data)
+RANGE_TYPE = 0b10
+IMU_TYPE = 0b11
 
 
-#Socket server version
-
-class MyUDPHandler:
+class MyUDPHandler(socketserver.BaseRequestHandler):
     def handle(self):
 
         packet = self.request[0].strip()
         #socket = self.request[1]
         
-        data_type = packet[0]
-        data = packet[1:]
-    
-        if data_type == DISTANCE_TYPE:
-            self.distance = data
+        timestamp = int.from_bytes(packet[:4], "big")
+        data_type = packet[4]
+        data = packet[5:]
+        if data_type == RANGE_TYPE:
+            if self.server.enable_range:
+                self.server.range_buffer.put_nowait((timestamp, data))
+            else:
+                pass
 
         elif data_type == IMAGE_TYPE:
-            # Show image with numpy OpenCV
-            self.image = data
+            if self.server.enable_image:
+                self.server.image_buffer.put_nowait((timestamp, data))
+            else:
+                pass
 
         elif data_type == AUDIO_TYPE:
-            self.audio_deque.append(data)
-class NiclaReceiverUDP2:
-    def __init__(self, pc_ip, pc_port, packet_size, audio_buffer_size=1000):
-        self.ip = pc_ip
-        self.port = pc_port
-        self.packet_size = packet_size
+            if self.server.enable_audio:
+                self.server.audio_buffer.put_nowait((timestamp, data))
+            else:
+                pass
 
-        #receiving data
-        self.distance = bytes()
-        self.image = bytes()
-        self.audio_buffer = queue.Queue(maxsize=audio_buffer_size)
-        self.imu = bytes()
+        elif data_type == IMU_TYPE:
+            if self.server.enable_imu:
+                self.server.imu_buffer.put_nowait((timestamp, data))
+            else:
+                pass
 
-    def connect_and_serve(self):
-        print("Waiting for niclabox to stream on", self.ip, ":", self.port)
+class NiclaReceiverUDP2(socketserver.UDPServer):
 
-        self.server = socketserver.UDPServer((self.ip, self.port), MyUDPHandler)
-        print("Connected to niclabox!")
+    def __init__(self, server_ip, server_port, enable_range=False, enable_image=False, enable_audio=False, enable_imu=False):
 
-        self.server_thread = self.server.serve_forever()
+        super().__init__((server_ip, server_port), MyUDPHandler)
+
+        self.enable_range = enable_range
+        self.enable_image = enable_image
+        self.enable_audio = enable_audio
+        self.enable_imu = enable_imu
+
+        if self.enable_range:
+            self.range_buffer = queue.Queue(maxsize=10)
+        if self.enable_image:
+            self.image_buffer = queue.Queue(maxsize=10)
+        if self.enable_audio:
+            self.audio_buffer = queue.Queue(maxsize=10)
+        if self.enable_imu:
+            self.imu_buffer = queue.Queue(maxsize=10)
+
+        self.server_thread = None
+
+    def serve(self):
+        self.server_thread = Thread(target=self.serve_forever)
         self.server_thread.start()
 
     def stop_serve(self):
-        self.server.server_close()
+        print("stopping")
+        self.shutdown()
+        self.server_thread.join()
+        self.server_close()
+
+    def get_range(self):
+
+        if not self.range_buffer.empty():
+            return self.range_buffer.get_nowait()
+        else:
+            return None
+
+    def get_image(self):
+        if not self.image_buffer.empty():
+            return self.image_buffer.get_nowait()
+        else:
+            return None
+    
+    def get_audio(self):
+        if not self.audio_buffer.empty():
+            return self.audio_buffer.get_nowait()
+        else:
+            return None
+    
+    def get_imu(self):
+        if not self.imu_buffer.empty():
+            return self.imu_buffer.get_nowait()
+        else:
+            return None
+
+
+
 
         
 
