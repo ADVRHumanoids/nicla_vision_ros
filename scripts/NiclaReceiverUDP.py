@@ -1,4 +1,3 @@
-import struct
 import queue
 import socketserver
 from threading import Thread
@@ -12,7 +11,7 @@ IMU_TYPE = 0b11
 class MyUDPHandler(socketserver.BaseRequestHandler):
     def handle(self):
 
-        packet = self.request[0].strip()
+        packet = self.request[0]
         #socket = self.request[1]
         
         timestamp = int.from_bytes(packet[:4], "big")
