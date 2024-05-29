@@ -51,19 +51,11 @@ import audio
 from ulab import numpy as np
 from ulab import utils
 
-from lsm6dsox import LSM6DSOX
-from machine import Pin
-from machine import SPI
-import struct
-
 # Define data types
 IMAGE_TYPE = 0b00
 AUDIO_TYPE = 0b01
 DISTANCE_TYPE = 0b10
-IMU_TYPE = 0b11
-
-HEADER_LENGTH = 4+1 #bytes (timestamp size + data type size)
-#BYTE_LENGTH = 8 #bits
+BYTE_LENGTH = 8
 
 # wifi ssid and password
 ssid = "DamianoHotspot"
@@ -71,14 +63,14 @@ password = "DamianoHotspot"
 
 
 # server address and port
-ip = "10.240.23.49"
+ip = "10.240.23.87"
 port = 8002
 
 # sensing settings
 picture_quality = 30 # going higher than 30 creates ENOMEM error (led green)
 
 # warning settings
-verbose = False
+verbose = True
 error_timeout = 5 # seconds to display error warning led
 
 # error handeling init
@@ -98,27 +90,20 @@ tof = VL53L1X(I2C(2))
 
 # microphone
 CHANNELS = 1
-mic_buf = []
-#raw_buf = None
+raw_buf = None
 audio_buf = None
 audio.init(channels=CHANNELS, frequency=16000, gain_db=24, highpass=0.9883)
 
 
 def audio_callback(buf):
     # NOTE: do Not call any function that allocates memory.
-    mic_buf.append(buf)
-
-    if len(mic_buf) > 20:
-        del mic_buf[:10]
-    '''
     global raw_buf
     if raw_buf is None:
         raw_buf = buf
-    '''
 
-# IMU
-lsm = LSM6DSOX(SPI(5), cs=Pin("PF6", Pin.OUT_PP, Pin.PULL_UP))
 
+# Start audio streaming
+audio.start_streaming(audio_callback)
 
 # wifi init
 wlan = network.WLAN(network.STA_IF)
@@ -131,8 +116,8 @@ wlan = network.WLAN(network.STA_IF)
 #    time.sleep_ms(1000)
 
 # transmission init
-intfloat2bytes_size = 4 # size for conversion of distance, timestamp, IMU values from Int/Float to bytes
-packet_size = 65000 # safely less than 65540 bytes that is the maximum for UDP
+distance_size = 4 # size for conversion of distance from Int to bytes
+packet_size = 65000 # safely less than 65540 that is the maximum for UDP
 client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 
@@ -150,53 +135,8 @@ def connect():
     if verbose == True:
         print(wlan.ifconfig())
 
-    # Start audio streaming after connection established
-    audio.start_streaming(audio_callback)
-
-class ValueErrorImage(Exception):
-  # Raised when the picture packet is too big (>65000 bytes)
-  def __init__(self, message="Error: the (compressed) picture packet is too big (>65000 bytes). Lower the quality!"):
-      self.message = message
-      print(f"\033[91m{self.message}\033[0m")
-      super().__init__(self.message)
-
-
-class ValueErrorAudio(Exception):
-  # Raised when the audio packet is too big (>65000 bytes)
-  def __init__(self, message="Error: the audio packet is too big (>65000 bytes). Lower the quality!"):
-      self.message = message
-      print(f"\033[91m{self.message}\033[0m")
-      super().__init__(self.message)
-
-#ID = 0
 def sense_and_send():
-    global audio_buf
-    global mic_buf
-
-
-    #IMU
-    #print("Accelerometer: x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}".format(*lsm.accel()))
-    #print("Gyroscope:     x:{:>8.3f} y:{:>8.3f} z:{:>8.3f}".format(*lsm.gyro()))
-    #print("")
-
-    acc_x, acc_y, acc_z = lsm.accel()  # Accelerometer
-    gyro_x, gyro_y, gyro_z = lsm.gyro()# Gyroscope
-
-    imu_packet = struct.pack('>ffffff', acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z)
-
-
-    # converting with known size the IMU
-    #    imu_packet = bytearray([])
-    #    acc_x = acc_x.to_bytes(intfloat2bytes_size, "big")
-    #    acc_y = acc_y.to_bytes(intfloat2bytes_size, "big")
-    #    acc_z = acc_z.to_bytes(intfloat2bytes_size, "big")
-    #    gyro_x = gyro_x.to_bytes(intfloat2bytes_size, "big")
-    #    gyro_y = gyro_y.to_bytes(intfloat2bytes_size, "big")
-    #    gyro_z = gyro_z.to_bytes(intfloat2bytes_size, "big")
-
-    #    imu_packet += acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z
-
-
+    global raw_buf, audio_buf
 
     # sensing, first distance and then camera that takes time to save in memory
     distance = tof.read() # class int
@@ -209,68 +149,41 @@ def sense_and_send():
         print(picture)
 
     # converting with known size the distance
-    distance = distance.to_bytes(intfloat2bytes_size, "big")
+    distance = distance.to_bytes(distance_size, "big")
 
     # compressing/converting and sizing the picture
     picture.compress(picture_quality) # class Image, bytes readable as jpeg
     picture_size = len(picture) # dimension of the compressed picture
 
     # audio
-    '''
     if raw_buf is not None:
         audio_buf = raw_buf
         raw_buf = None
     else:
         audio_buf = bytearray([])
-    '''
 
-    audio_buf = bytearray([])
-    if len(mic_buf)>1:
-        audio_buf += mic_buf.pop(0)
-        audio_buf += mic_buf.pop(0)
-    elif len(mic_buf)>0:
-        audio_buf += mic_buf.pop(0)
 
     # printing transmission info and data to transmit
     if verbose == True:
+        print("Distance size:", distance_size, "set by the user")
         print("Picture quality:", picture_quality)
-        print("Picture size (bytes):", picture_size,  "must be less than", packet_size, " bytes")
+        print("Picture size:", picture_size,  "must be less than", packet_size)
+        print("Distance:", distance)
         print("Picture:")
         print(picture)
-        print("Distance size:", intfloat2bytes_size, "set by the user")
-        print("Distance:", distance)
-
-        print("Mic Buffer Length (audio packets 0.032ms of 1024 bytes each): ", len(mic_buf))
-        print("Mic Buffer Size (bytes): ", len(mic_buf)*1024)
-        print("Audio Buffer Size (bytes): ", len(audio_buf))
-
-    timestamp = time.ticks_ms()
-    timestamp = timestamp.to_bytes(intfloat2bytes_size, "big")
 
 
-    # picture packet too big, skip transmission
-    if (picture_size + HEADER_LENGTH > packet_size):
-        raise ValueErrorImage
+    if (picture_size + BYTE_LENGTH > packet_size) or (len(audio_buf)*BYTE_LENGTH + BYTE_LENGTH > packet_size): # picture too big, skip transmission
+        raise ValueError
     else:
-        client.sendto( timestamp + bytes([IMAGE_TYPE]) + picture, (ip, port))
+#        client.sendto( distance, (ip, port))
+#        client.sendto( picture, (ip, port))
 
-    # audio packet too big, skip transmission
-    if (len(audio_buf) + HEADER_LENGTH > packet_size):
-        raise ValueErrorAudio
-    else:
-        client.sendto( timestamp + bytes([AUDIO_TYPE]) + audio_buf, (ip, port))
-
-    client.sendto( timestamp + bytes([DISTANCE_TYPE]) + distance, (ip, port))
-
-    #debug_packet = bytearray([IMAGE_TYPE, AUDIO_TYPE, DISTANCE_TYPE, IMU_TYPE])
-    #client.sendto( timestamp + bytes([IMU_TYPE]) + debug_packet, (ip, port))
-    client.sendto( timestamp + bytes([IMU_TYPE]) + imu_packet, (ip, port))
-
-    #ID += 1
-    #if ID > 255:
-    #    ID = 0
-    if verbose == True:
-        print("Transmission completed")
+        client.sendto( bytes([DISTANCE_TYPE]) + distance, (ip, port))
+        client.sendto( bytes([IMAGE_TYPE]) + picture, (ip, port))
+        client.sendto( bytes([AUDIO_TYPE]) + audio_buf, (ip, port))
+        if verbose == True:
+            print("Transmission completed")
 
 connect()
 
@@ -282,8 +195,8 @@ while True:
 
         # error warning reset
         if error == True:
-            #if verbose == True:
-            print("\033[91mError in the last", error_timeout, "seconds\033[0m")
+            if verbose == True:
+                print("\033[91mError in the last", error_timeout, "seconds\033[0m")
             if time.time() - error_time > error_timeout:
                 error_time = 0
                 error_quality.off()
@@ -292,14 +205,13 @@ while True:
 
         sense_and_send()
 
-    except (ValueErrorImage, ValueErrorAudio) as e:
-        #if verbose == True:
-        #    print("\033[91mError: the compressed picture (or audio) is too big. Lower the quality!\033[0m")
+    except ValueError as e:
+        if verbose == True:
+            print("\033[91mError: the compressed picture (or audio) is too big. Lower the quality!\033[0m")
         error = True
         error_time = time.time()
         error_quality.on()
         pass
-
 
     except OSError as e: # unforseen error, debug with OpenMV
         if verbose == True:
