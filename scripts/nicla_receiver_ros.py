@@ -119,7 +119,7 @@ class NiclaRosPublisher:
                 ### PUBLISH IMG RAW
                 if self.enable_camera_raw:
                     # Convert the byte array to a numpy array
-                    nparr = np.frombuffer([1], np.uint8)
+                    nparr = np.frombuffer(image[1], np.uint8)
 
                     # Decode the compressed image
                     img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
