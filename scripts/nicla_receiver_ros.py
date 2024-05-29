@@ -59,7 +59,18 @@ class NiclaRosPublisher:
 
         if self.enable_camera_raw or self.enable_camera_compressed:
             camera_info_topic = nicla_name + "/camera/camera_info"
-            self.camera_info_msg = CameraInfo() #TODO
+            self.camera_info_msg = CameraInfo() 
+            self.camera_info_msg.header.frame_id = nicla_name + "_camera"
+            self.camera_info_msg.height = 240
+            self.camera_info_msg.width = 320
+            self.camera_info_msg.distortion_model = "plumb_rob"
+            self.camera_info_msg.K = [416.650528, 0.000000, 166.124514,
+                                      0.000000, 419.404643, 104.410543,
+                                      0.000000, 0.000000, 1.000000]
+            self.camera_info_msg.D = [0.176808, -0.590488, -0.008412, 0.015473, 0.000000]
+            self.camera_info_msg.P = [421.373566, 0.000000, 168.731782, 0.000000,
+                                      0.000000, 426.438812, 102.665989, 0.000000,
+                                      0.000000, 0.000000, 1.000000, 0.000000]
             self.camera_info_pub  = rospy.Publisher(camera_info_topic, CameraInfo, queue_size=5)
 
         if self.enable_audio:
@@ -105,10 +116,12 @@ class NiclaRosPublisher:
 
         ### PUBLISH IMAGE
         if self.enable_camera_raw or self.enable_camera_compressed:
-            self.camera_info_msg.header.stamp = rospy.Time.now()
-            self.camera_info_pub.publish(self.camera_info_msg)
 
             if (image := self.nicla_receiver_udp.get_image()) is not None:
+
+                ##Publish info
+                self.camera_info_msg.header.stamp = rospy.Time.from_sec(image[0]/1000)
+                self.camera_info_pub.publish(self.camera_info_msg)
 
                 ### PUBLISH COMPRESSED
                 if self.enable_camera_compressed:
@@ -140,8 +153,6 @@ class NiclaRosPublisher:
 
                     self.image_raw_pub.publish(self.image_raw_msg)
 
-
-
         ### AUDIO DATA
         if self.enable_audio or self.enable_audio_stamped :
 
@@ -162,7 +173,12 @@ class NiclaRosPublisher:
         if self.enable_imu and ((imu := self.nicla_receiver_udp.get_imu()) is not None):
             self.imu_msg.header.stamp = rospy.Time.from_sec(imu[0]/1000)
 
-            acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1])
+            try:
+                acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1])
+            except Exception as e:   
+                rospy.logerr("imu pack has ", len(imu[1]), " bytes")
+                raise e
+            
             self.imu_msg.orientation.x = 0
             self.imu_msg.orientation.y = 0
             self.imu_msg.orientation.z = 0
@@ -195,10 +211,10 @@ if __name__ == "__main__":
         try:
             nicla_ros_publisher.run()
 
-        except OSError as e:
+        except Exception as e:
             rospy.logerr(e)
-
-            pass # try again
+            nicla_ros_publisher.stop()
+            break
         
         rate.sleep()
 
