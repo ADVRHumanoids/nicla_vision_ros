@@ -163,9 +163,16 @@ class NiclaRosPublisher:
             self.imu_msg.header.stamp = rospy.Time.from_sec(imu[0]/1000)
 
             acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1])
-            self.imu_msg.orientation = 0,0,0,1
-            self.imu_msg.angular_velocity = 0.017453 * gyro_x, 0.017453 * gyro_y, 0.017453 * gyro_z
-            self.imu_msg.linear_acceleration = acc_x, acc_y, acc_z
+            self.imu_msg.orientation.x = 0
+            self.imu_msg.orientation.y = 0
+            self.imu_msg.orientation.z = 0
+            self.imu_msg.orientation.w = 1
+            self.imu_msg.angular_velocity.x = 0.017453 * gyro_x
+            self.imu_msg.angular_velocity.y = 0.017453 * gyro_y
+            self.imu_msg.angular_velocity.z = 0.017453 * gyro_z
+            self.imu_msg.linear_acceleration.x = acc_x
+            self.imu_msg.linear_acceleration.y = acc_y
+            self.imu_msg.linear_acceleration.z = acc_z
             self.imu_pub.publish(self.imu_msg)
 
     def stop(self):
