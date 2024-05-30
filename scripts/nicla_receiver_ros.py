@@ -10,7 +10,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
 
-import NiclaReceiverUDP
+import NiclaReceiverServer
 
 
 class NiclaRosPublisher:
@@ -23,8 +23,7 @@ class NiclaRosPublisher:
         # server address and port (the address of the machine running this code, any available port)
         ip = rospy.get_param("~receiver_ip")
         port = rospy.get_param("~receiver_port", '8002')
-        packet_size = rospy.get_param("~packet_size", '65540')
-        audio_buffer = rospy.get_param("~audio_buffer", '100')
+        connection_type = rospy.get_param("~connection_type", 'udp')
 
         self.enable_range = rospy.get_param("~enable_range", True)
         self.enable_camera_raw = rospy.get_param("~enable_camera_raw", False)
@@ -98,17 +97,29 @@ class NiclaRosPublisher:
             self.imu_msg = Imu()
             self.imu_pub = rospy.Publisher(imu_topic, Imu, queue_size=5)
 
-        self.nicla_receiver_udp = NiclaReceiverUDP.NiclaReceiverUDP2(ip, port, 
-                                                                     enable_range=self.enable_range, 
-                                                                     enable_image=self.enable_camera_raw or self.enable_camera_compressed,
-                                                                     enable_audio=self.enable_audio or self.enable_audio_stamped,
-                                                                     enable_imu=self.enable_imu)
-        self.nicla_receiver_udp.serve()
+        if connection_type == "udp":
+            self.nicla_receiver_server = NiclaReceiverServer.NiclaReceiverUDP(ip, port, 
+                                                                        enable_range=self.enable_range, 
+                                                                        enable_image=self.enable_camera_raw or self.enable_camera_compressed,
+                                                                        enable_audio=self.enable_audio or self.enable_audio_stamped,
+                                                                        enable_imu=self.enable_imu)
+        elif connection_type == "tcp":
+            self.nicla_receiver_server = NiclaReceiverServer.NiclaReceiverTCP(ip, port, 
+                                                            enable_range=self.enable_range, 
+                                                            enable_image=self.enable_camera_raw or self.enable_camera_compressed,
+                                                            enable_audio=self.enable_audio or self.enable_audio_stamped,
+                                                            enable_imu=self.enable_imu)
+
+        else:
+            rospy.logerr("Connection type ", connection_type, " not known")
+            raise Exception("Connection type not known")
+            
+        self.nicla_receiver_server.serve()
 
 
     def run(self):
 
-        if self.enable_range and ((range := self.nicla_receiver_udp.get_range()) is not None):
+        if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
 
             self.range_msg.header.stamp = rospy.Time.from_sec(range[0]/1000)
             self.range_msg.range = int.from_bytes(range[1], "big")
@@ -117,7 +128,7 @@ class NiclaRosPublisher:
         ### PUBLISH IMAGE
         if self.enable_camera_raw or self.enable_camera_compressed:
 
-            if (image := self.nicla_receiver_udp.get_image()) is not None:
+            if (image := self.nicla_receiver_server.get_image()) is not None:
 
                 ##Publish info
                 self.camera_info_msg.header.stamp = rospy.Time.from_sec(image[0]/1000)
@@ -158,7 +169,7 @@ class NiclaRosPublisher:
 
             self.audio_info_pub.publish(self.audio_info_msg)
 
-            if (audio_data := self.nicla_receiver_udp.get_audio()) is not None:
+            if (audio_data := self.nicla_receiver_server.get_audio()) is not None:
 
                 if self.enable_audio:
                     self.audio_msg.data = audio_data[1]
@@ -170,7 +181,7 @@ class NiclaRosPublisher:
                     self.audio_stamped_pub.publish(self.audio_stamped_msg)
 
         ### IMU DATA
-        if self.enable_imu and ((imu := self.nicla_receiver_udp.get_imu()) is not None):
+        if self.enable_imu and ((imu := self.nicla_receiver_server.get_imu()) is not None):
             self.imu_msg.header.stamp = rospy.Time.from_sec(imu[0]/1000)
 
             try:
@@ -192,7 +203,7 @@ class NiclaRosPublisher:
             self.imu_pub.publish(self.imu_msg)
 
     def stop(self):
-        self.nicla_receiver_udp.stop_serve()
+        self.nicla_receiver_server.stop_serve()
 
 
 
