@@ -1,0 +1,30 @@
+#!/usr/bin/env python
+
+import rospy
+
+from nicla_vision_ros import NiclaRosPublisher
+
+
+if __name__ == "__main__":
+
+    rospy.init_node("nicla_receiver")
+
+    nicla_ros_publisher = NiclaRosPublisher()
+
+    rate = rospy.Rate(500)
+
+    rospy.loginfo("Starting receiving loop")
+
+    while not rospy.is_shutdown():
+
+        try:
+            nicla_ros_publisher.run()
+
+        except Exception as e:
+            rospy.logerr(e)
+            nicla_ros_publisher.stop()
+            break
+        
+        rate.sleep()
+
+    nicla_ros_publisher.stop()

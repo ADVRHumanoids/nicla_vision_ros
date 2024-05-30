@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env python
 
 import struct
 import rospy
@@ -10,8 +10,7 @@ from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
 
-import NiclaReceiverServer
-
+from nicla_vision_ros import NiclaReceiverUDP, NiclaReceiverTCP
 
 class NiclaRosPublisher:
 
@@ -40,7 +39,7 @@ class NiclaRosPublisher:
             self.range_msg.radiation_type = Range.INFRARED
             self.range_msg.min_range = 0
             self.range_msg.max_range = 4
-            self.range_msg.field_of_view = 15
+            self.range_msg.field_of_view = 0.471239 #27degrees according to arduino doc
 
         if self.enable_camera_raw:
             #default topic name of image transport (which is not available in python so we do not use it)
@@ -95,16 +94,21 @@ class NiclaRosPublisher:
         if self.enable_imu:
             imu_topic = nicla_name + "/imu"
             self.imu_msg = Imu()
+            self.imu_msg.header.frame_id = nicla_name + "_imu"
+            self.imu_msg.orientation.x = 0
+            self.imu_msg.orientation.y = 0
+            self.imu_msg.orientation.z = 0
+            self.imu_msg.orientation.w = 1
             self.imu_pub = rospy.Publisher(imu_topic, Imu, queue_size=5)
 
         if connection_type == "udp":
-            self.nicla_receiver_server = NiclaReceiverServer.NiclaReceiverUDP(ip, port, 
+            self.nicla_receiver_server = NiclaReceiverUDP(ip, port, 
                                                                         enable_range=self.enable_range, 
                                                                         enable_image=self.enable_camera_raw or self.enable_camera_compressed,
                                                                         enable_audio=self.enable_audio or self.enable_audio_stamped,
                                                                         enable_imu=self.enable_imu)
         elif connection_type == "tcp":
-            self.nicla_receiver_server = NiclaReceiverServer.NiclaReceiverTCP(ip, port, 
+            self.nicla_receiver_server = NiclaReceiverTCP(ip, port, 
                                                             enable_range=self.enable_range, 
                                                             enable_image=self.enable_camera_raw or self.enable_camera_compressed,
                                                             enable_audio=self.enable_audio or self.enable_audio_stamped,
@@ -122,7 +126,7 @@ class NiclaRosPublisher:
         if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
 
             self.range_msg.header.stamp = rospy.Time.from_sec(range[0]/1000)
-            self.range_msg.range = int.from_bytes(range[1], "big")
+            self.range_msg.range = int.from_bytes(range[1], "big")/1000
             self.range_pub.publish(self.range_msg)
 
         ### PUBLISH IMAGE
@@ -190,43 +194,13 @@ class NiclaRosPublisher:
                 rospy.logerr("imu pack has ", len(imu[1]), " bytes")
                 raise e
             
-            self.imu_msg.orientation.x = 0
-            self.imu_msg.orientation.y = 0
-            self.imu_msg.orientation.z = 0
-            self.imu_msg.orientation.w = 1
             self.imu_msg.angular_velocity.x = 0.017453 * gyro_x
             self.imu_msg.angular_velocity.y = 0.017453 * gyro_y
             self.imu_msg.angular_velocity.z = 0.017453 * gyro_z
-            self.imu_msg.linear_acceleration.x = acc_x
-            self.imu_msg.linear_acceleration.y = acc_y
-            self.imu_msg.linear_acceleration.z = acc_z
+            self.imu_msg.linear_acceleration.x = 9.80665 * acc_x
+            self.imu_msg.linear_acceleration.y = 9.80665 * acc_y
+            self.imu_msg.linear_acceleration.z = 9.80665 * acc_z
             self.imu_pub.publish(self.imu_msg)
 
     def stop(self):
         self.nicla_receiver_server.stop_serve()
-
-
-
-if __name__ == "__main__":
-
-    rospy.init_node("nicla_receiver")
-
-    nicla_ros_publisher = NiclaRosPublisher()
-
-    rate = rospy.Rate(500)
-
-    rospy.loginfo("Starting receiving loop")
-
-    while not rospy.is_shutdown():
-
-        try:
-            nicla_ros_publisher.run()
-
-        except Exception as e:
-            rospy.logerr(e)
-            nicla_ros_publisher.stop()
-            break
-        
-        rate.sleep()
-
-    nicla_ros_publisher.stop()
