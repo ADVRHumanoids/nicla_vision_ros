@@ -1,0 +1,44 @@
+<launch>
+
+    <arg name="gazebo" default="true"/>
+    <arg name="rviz" default="true"/>
+    <arg name="rviz_config" default="$(find dagana_urdf)/rviz/dagana.rviz"/>
+
+    <arg name="nicla_camera" default="true"/>
+    <arg name="nicla_tof" default="true"/>
+    <arg name="nicla_visualize_tof" default="true"/>
+    <arg name="nicla_mic" default="true"/>
+    <arg name="nicla_imu" default="true"/>
+
+    <param name="use_sim_time" type="bool" value="true"/>
+
+    <param name="robot_description"
+            command="$(find xacro)/xacro $(find nicla_vision_ros)/urdf/nicla.urdf.xacro 
+                nicla_camera:=$(arg nicla_camera) 
+                nicla_tof:=$(arg nicla_tof) 
+                nicla_visualize_tof:=$(arg nicla_visualize_tof) 
+                nicla_mic:=$(arg nicla_mic) 
+                nicla_imu:=$(arg nicla_imu)
+                "/>
+
+    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+        <arg name="paused" value="false"/>
+        <arg name="use_sim_time" value="true"/>
+        <arg name="gui" value="true"/>
+        <arg name="recording" value="false"/>
+        <arg name="debug" value="false"/>
+        <arg name="verbose" value="true"/>
+        <arg name="physics" value="ode"/>
+    </include>
+
+    <node name="nicla_urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
+            args="-urdf -model nicla -param robot_description -z 0.1 -R 0 -P 0 -Y 0"/>
+
+    <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen" >
+        <param name="publish_frequency" type="double" value="250.0" />
+    </node> 
+
+    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find nicla_vision_ros)/config/rviz/nicla.rviz">
+    </node> 
+
+</launch>
