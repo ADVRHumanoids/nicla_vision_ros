@@ -42,6 +42,14 @@ from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
 
+
+
+# Define data types
+IMAGE_TYPE = 0b00
+AUDIO_TYPE = 0b01
+DISTANCE_TYPE = 0b10
+IMU_TYPE = 0b11
+
 class Server:
 
     # set maximum packet size
@@ -94,7 +102,12 @@ class Server:
         # receive distance value
         packet, _ = self.server.recvfrom(self.packet_size)
         ros_time = rospy.Time.now()
+        
+        timestamp = int.from_bytes(packet[:4], "big")
+        data_type = packet[4]
+        data = packet[5:]
 
+        '''
         if len(packet) < 100: # a small packet is the distance
             distance = packet
             distance = int.from_bytes(distance, "big")
@@ -103,11 +116,12 @@ class Server:
             self.range_msg.header.stamp = ros_time
 
             self.distance_pub.publish(self.range_msg)
+            
+        '''
+        #else:  # a big packet is the picture
+        if data_type == IMAGE_TYPE:
 
-
-        else:  # a big packet is the picture
-
-            picture = packet
+            picture = data
 
             ### PUBLISH COMPRESSED
             if self.picture_topic != "":
@@ -156,9 +170,8 @@ class Server:
             ### PUBLISH CAMERA INFO
             self.camera_info_msg.header.stamp = ros_time
             self.camera_info_pub.publish(self.camera_info_msg)
- 
             
-
+            
 
 if __name__ == "__main__":
 
