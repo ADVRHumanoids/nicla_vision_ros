@@ -213,7 +213,7 @@ if __name__ == "__main__":
 
     nicla_ros_publisher = NiclaRosPublisher()
 
-    rate = rospy.Rate(500)
+    rate = rospy.Rate(1000)
 
     rospy.loginfo("Starting receiving loop")
 
