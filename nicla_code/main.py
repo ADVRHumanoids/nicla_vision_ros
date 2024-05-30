@@ -133,10 +133,32 @@ wlan = network.WLAN(network.STA_IF)
 # transmission init
 intfloat2bytes_size = 4 # size for conversion of distance, timestamp, IMU values from Int/Float to bytes
 packet_size = 65000 # safely less than 65540 bytes that is the maximum for UDP
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # SOCK_STREAM SOCK_DGRAM
 
+## UDP
+#client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # SOCK_STREAM SOCK_DGRAM
+
+## TCP
+# Create server socket
+'''
+s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+s.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, True)
+
+# Bind and listen
+s.bind([ip, port])
+s.listen(0)
+# Set server socket to blocking
+s.setblocking(True)
+client = None
+'''
+
+# Create a socket (SOCK_STREAM means a TCP socket)
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+# Connect to server and send data
+client.connect((ip, port))
 
 def connect():
+    #global client
+
     if verbose == True:
         print("Connecting to wifi network", ssid)
     wlan.active(False)
@@ -149,6 +171,14 @@ def connect():
     error_network.off()
     if verbose == True:
         print(wlan.ifconfig())
+
+    '''
+    print("Waiting for TCP connection..")
+    client, addr = s.accept()
+    # set client socket timeout to 5s
+    client.settimeout(5.0)
+    print("Connected to " + addr[0] + ":" + str(addr[1]))
+    '''
 
     # Start audio streaming after connection established
     audio.start_streaming(audio_callback)
@@ -172,6 +202,7 @@ class ValueErrorAudio(Exception):
 def sense_and_send():
     global audio_buf
     global mic_buf
+    global client
 
 
     #IMU
@@ -244,6 +275,8 @@ def sense_and_send():
         print("Audio Buffer Size (bytes): ", len(audio_buf))
 
     timestamp = time.ticks_ms()
+    print("TIMESTAMP: ", timestamp, "PACKET: ", imu_packet, "LENGTH: ", len(imu_packet))
+
     timestamp = timestamp.to_bytes(intfloat2bytes_size, "big")
 
 
@@ -251,19 +284,26 @@ def sense_and_send():
     if (picture_size + HEADER_LENGTH > packet_size):
         raise ValueErrorImage
     else:
-        client.sendto( timestamp + bytes([IMAGE_TYPE]) + picture, (ip, port))
+        pass
+        #client.sendto( timestamp + bytes([IMAGE_TYPE]) + picture, (ip, port))
+        client.sendall( timestamp + bytes([IMAGE_TYPE]) + picture)
 
     # audio packet too big, skip transmission
     if (len(audio_buf) + HEADER_LENGTH > packet_size):
         raise ValueErrorAudio
     else:
-        client.sendto( timestamp + bytes([AUDIO_TYPE]) + audio_buf, (ip, port))
+        pass
+        #client.sendto( timestamp + bytes([AUDIO_TYPE]) + audio_buf, (ip, port))
+        #client.sendall( timestamp + bytes([AUDIO_TYPE]) + audio_buf)
 
-    client.sendto( timestamp + bytes([DISTANCE_TYPE]) + distance, (ip, port))
+    #client.sendto( timestamp + bytes([DISTANCE_TYPE]) + distance, (ip, port))
+    #client.sendall( timestamp + bytes([DISTANCE_TYPE]) + distance)
 
     #debug_packet = bytearray([IMAGE_TYPE, AUDIO_TYPE, DISTANCE_TYPE, IMU_TYPE])
     #client.sendto( timestamp + bytes([IMU_TYPE]) + debug_packet, (ip, port))
-    client.sendto( timestamp + bytes([IMU_TYPE]) + imu_packet, (ip, port))
+
+    #client.sendto( timestamp + bytes([IMU_TYPE]) + imu_packet, (ip, port))
+    #client.sendall( timestamp + bytes([IMU_TYPE]) + imu_packet)
 
     #ID += 1
     #if ID > 255:
