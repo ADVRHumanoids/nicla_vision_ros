@@ -66,12 +66,12 @@ HEADER_LENGTH = 4+1 #bytes (timestamp size + data type size)
 #BYTE_LENGTH = 8 #bits
 
 # wifi ssid and password
-ssid = "ToriTuringHotspot"
-password = "MerdaCulo"
+ssid = "DamianoHotspot"
+password = "DamianoHotspot"
 
 
 # server address and port
-ip = "10.240.23.78"
+ip = "10.240.23.49"
 port = 8002
 
 # sensing settings
@@ -133,7 +133,7 @@ wlan = network.WLAN(network.STA_IF)
 # transmission init
 intfloat2bytes_size = 4 # size for conversion of distance, timestamp, IMU values from Int/Float to bytes
 packet_size = 65000 # safely less than 65540 bytes that is the maximum for UDP
-client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+client = socket.socket(socket.AF_INET, socket.SOCK_STREAM) # SOCK_STREAM SOCK_DGRAM
 
 
 def connect():
