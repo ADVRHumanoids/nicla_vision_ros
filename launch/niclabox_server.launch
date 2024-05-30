@@ -1,7 +1,7 @@
 <?xml version="1.0" ?>
 <launch>
 
-    <arg name="server_ip" default="10.240.23.87" />
+    <arg name="server_ip" default="10.240.23.49" />
     <arg name="niclabx_distance_tf" default="world" />
     <arg name="server_port" default="8002" />
     <arg name="distance_topic" default="niclabox/distance" />
