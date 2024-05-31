@@ -28,247 +28,342 @@ from machine import Pin
 from machine import SPI
 import struct
 
-# Define data types
-IMAGE_TYPE = 0b00
-AUDIO_TYPE = 0b01
-DISTANCE_TYPE = 0b10
-IMU_TYPE = 0b11
-
-
-# wifi ssid and password
-ssid = "DamianoHotspot"
-password = "DamianoHotspot"
-
-
-# server address and port
-ip = "10.240.23.x"
-port = 8002
-
-# sensing settings
-picture_quality = 30 # going higher than 30 creates ENOMEM error (led green)
-
-# warning settings
-verbose = False
-error_timeout = 5 # seconds to display error warning led
-
-# error handeling init
-error = False
-error_time = 0
-error_network = LED("LED_BLUE")
-error_unforseen = LED("LED_GREEN")
-error_quality = LED("LED_RED")
-
-# camera init
-sensor.reset()
-sensor.set_framesize(sensor.QVGA)
-sensor.set_pixformat(sensor.RGB565)
-
-# distance sensor init
-tof = VL53L1X(I2C(2))
-
-# microphone
-CHANNELS = 1
-mic_buf = []
-audio_buf = None
-audio.init(channels=CHANNELS, frequency=16000, gain_db=24, highpass=0.9883)
-
-
-def audio_callback(buf):
-    # NOTE: do Not call any function that allocates memory.
-    mic_buf.append(buf)
-
-    if len(mic_buf) > 20:
-        del mic_buf[:10]
-
-# IMU
-lsm = LSM6DSOX(SPI(5), cs=Pin("PF6", Pin.OUT_PP, Pin.PULL_UP))
-
-# wifi init
-wlan = network.WLAN(network.STA_IF)
-
-# transmission init
-int2bytes_size = 4 # size for conversion of distance and timestamp from Int to bytes
-packet_size = 65000 # safely less than 65540 bytes that is the maximum for UDP
-
-HEADER_LENGTH = int2bytes_size + int2bytes_size +1 #bytes (pkg size + timestamp size + data type size)
-
-IMU_SIZE = HEADER_LENGTH - int2bytes_size + 24
-IMU_SIZE = IMU_SIZE.to_bytes(int2bytes_size, "big")
-
-DISTANCE_SIZE = HEADER_LENGTH - int2bytes_size + int2bytes_size
-DISTANCE_SIZE = DISTANCE_SIZE.to_bytes(int2bytes_size, "big")
-
-HEADER_SIZE_DIM = HEADER_LENGTH - int2bytes_size
-
-## UDP
-#client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM) # SOCK_STREAM SOCK_DGRAM
-
-## TCP
-# Create a socket (SOCK_STREAM means a TCP socket)
-client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-# Connect to server and send data
-client.connect((ip, port))
-
-def connect():
-    if verbose == True:
-        print("Connecting to wifi network", ssid)
-    wlan.active(False)
-    time.sleep(2)
-    wlan.active(True)
-    wlan.connect(ssid, password)
-    while not wlan.isconnected():
-        error_network.on()
-        time.sleep(1)
-    error_network.off()
-    if verbose == True:
-        print(wlan.ifconfig())
-
-    # TODO: put client.connect of TCP here or in other function
-
-    # Start audio streaming after connection established
-    audio.start_streaming(audio_callback)
 
 class ValueErrorImage(Exception):
-  # Raised when the picture packet is too big (>65000 bytes)
-  def __init__(self, message="Error: the (compressed) picture packet is too big (>65000 bytes). Lower the quality!"):
-      self.message = message
-      print(f"\033[91m{self.message}\033[0m")
-      super().__init__(self.message)
+    # Raised when the picture packet is too big (>65000 bytes)
+    def __init__(self, message="Error: the (compressed) picture packet is too big (>65000 bytes). Lower the quality!"):
+        self.message = message
+        print(f"\033[91m{self.message}\033[0m")
+        super().__init__(self.message)
 
 
 class ValueErrorAudio(Exception):
-  # Raised when the audio packet is too big (>65000 bytes)
-  def __init__(self, message="Error: the audio packet is too big (>65000 bytes). Lower the quality!"):
-      self.message = message
-      print(f"\033[91m{self.message}\033[0m")
-      super().__init__(self.message)
+    # Raised when the audio packet is too big (>65000 bytes)
+    def __init__(self, message="Error: the audio packet is too big (>65000 bytes). Lower the quality!"):
+        self.message = message
+        print(f"\033[91m{self.message}\033[0m")
+        super().__init__(self.message)
+
+class TCPError(Exception):
+    # Raised when the TCP connection is lost
+    def __init__(self, message="Error: the TCP connection is lost! Trying to establish the connection again..."):
+        self.message = message
+        print(f"\033[91m{self.message}\033[0m")
+        super().__init__(self.message)
+
+class UDPError(Exception):
+    # Raised when the UDP connection is lost
+    def __init__(self, message="Error: the UDP connection is lost! Trying to establish the connection again..."):
+        self.message = message
+        print(f"\033[91m{self.message}\033[0m")
+        super().__init__(self.message)
 
 
-def sense_and_send():
-    global audio_buf
-    global mic_buf
-    global client
-    global IMU_SIZE, DISTANCE_SIZE, HEADER_SIZE_DIM, HEADER_LENGTH
+class StreamManager():
+    def __init__(self): #connection type, ssid, pwd, ip, verbose
+
+        # warning settings
+        self.verbose = False
+        self.error_timeout = 5 # seconds to display error warning led
+
+        # error handling init
+        self.error = False
+        self.error_time = 0
+        self.error_network = LED("LED_BLUE")
+        self.error_unforseen = LED("LED_GREEN")
+        self.error_quality = LED("LED_RED")
 
 
-    # Directions and signs set by evidence
-    acc_y, acc_x, acc_z = lsm.accel()  # Accelerometer
-    acc_z = -acc_z
-    gyro_y, gyro_x, gyro_z = lsm.gyro()# Gyroscope
-    gyro_z = -gyro_z
+        # CONNECTION TYPE is
+        # 1 for TCP, or
+        # 0 for UDP
+        self.CONNECTION_TYPE = 1
 
-    # Converting IMU values to bytes
-    imu_packet = struct.pack('>ffffff', acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z)
+        # wifi ssid and password
+        self.ssid = "DamianoHotspot"
+        self.password = "DamianoHotspot"
 
-    # sensing, first distance and then camera that takes time to save in memory
-    distance = tof.read() # class int
-    picture = sensor.snapshot() # class Image, bytes not readable
+        # server address and port
+        self.ip = "10.240.23.49"
+        self.port = 8002
 
-    # printing sensors output
-    if verbose == True:
-        print("Distance:", distance)
-        print("Picture:")
-        print(picture)
+        # wifi init
+        self.wlan = network.WLAN(network.STA_IF)
 
-    # converting with known size the distance
-    distance = distance.to_bytes(int2bytes_size, "big")
+        ## TCP
+        if self.CONNECTION_TYPE:
+            print("Establishing TCP connection...")
+            self.connect_TCP()
+        else:
+            ## UDP
+            print("Initiating UDP connection...")
+            self.connect_UDP()
 
-    # compressing/converting and sizing the picture
-    picture.compress(picture_quality) # class Image, bytes readable as jpeg
-    picture_size = len(picture) # dimension of the compressed picture
-
-    # audio
-    audio_buf = bytearray([])
-    if len(mic_buf)>1:
-        audio_buf += mic_buf.pop(0)
-        audio_buf += mic_buf.pop(0)
-    elif len(mic_buf)>0:
-        audio_buf += mic_buf.pop(0)
-
-    # printing transmission info and data to transmit
-    if verbose == True:
-        print("Picture quality:", picture_quality)
-        print("Picture size (bytes):", picture_size,  "must be less than", packet_size, " bytes")
-        print("Picture:")
-        print(picture)
-        print("Distance size:", int2bytes_size, "set by the user")
-        print("Distance:", distance)
-
-        print("Mic Buffer Length (audio packets 0.032ms of 1024 bytes each): ", len(mic_buf))
-        print("Mic Buffer Size (bytes): ", len(mic_buf)*1024)
-        print("Audio Buffer Size (bytes): ", len(audio_buf))
-
-    timestamp = time.ticks_ms()
-    #print("TIMESTAMP: ", timestamp, "PACKET: ", imu_packet, "LENGTH: ", len(imu_packet))
-    timestamp = timestamp.to_bytes(int2bytes_size, "big")
+        # Define data types for headers (1 byte)
+        self.IMAGE_TYPE = 0b00
+        self.AUDIO_TYPE = 0b01
+        self.DISTANCE_TYPE = 0b10
+        self.IMU_TYPE = 0b11
 
 
-    # picture packet too big, skip transmission
-    if (picture_size + HEADER_LENGTH > packet_size):
-        raise ValueErrorImage
-    else:
-        pkg_size = HEADER_SIZE_DIM + picture_size
-        pkg_size = pkg_size.to_bytes(int2bytes_size, "big")
-        #client.sendto( pkg_size + timestamp + bytes([IMAGE_TYPE]) + picture, (ip, port))
-        client.sendall( pkg_size + timestamp + bytes([IMAGE_TYPE]) + picture)
+        # Defining package dimensions (bytes) utils
+        self.int2bytes_size = 4 # size for conversion of distance and timestamp from Int to bytes
+        self.packet_size = 65000 # safely less than 65540 bytes that is the maximum for UDP
 
-    # audio packet too big, skip transmission
-    if (len(audio_buf) + HEADER_LENGTH > packet_size):
-        raise ValueErrorAudio
-    else:
-        pkg_size = HEADER_SIZE_DIM + len(audio_buf)
-        pkg_size = pkg_size.to_bytes(int2bytes_size, "big")
-        #client.sendto( pkg_size + timestamp + bytes([AUDIO_TYPE]) + audio_buf, (ip, port))
-        client.sendall( pkg_size + timestamp + bytes([AUDIO_TYPE]) + audio_buf)
+        self.HEADER_LENGTH = self.int2bytes_size + self.int2bytes_size + len(bytes([self.IMAGE_TYPE])) #bytes (pkg size + timestamp size + data type size)
 
-    #client.sendto( DISTANCE_SIZE + timestamp + bytes([DISTANCE_TYPE]) + distance, (ip, port))
-    client.sendall( DISTANCE_SIZE + timestamp + bytes([DISTANCE_TYPE]) + distance)
+        self.IMU_SIZE = self.HEADER_LENGTH - self.int2bytes_size + 6*self.int2bytes_size # 6 Floats and each Float is 4 bytes (as the Int)
+        self.IMU_SIZE = self.IMU_SIZE.to_bytes(self.int2bytes_size, "big")
 
-    #client.sendto( IMU_SIZE + timestamp + bytes([IMU_TYPE]) + imu_packet, (ip, port))
-    client.sendall( IMU_SIZE + timestamp + bytes([IMU_TYPE]) + imu_packet)
+        self.DISTANCE_SIZE = self.HEADER_LENGTH - self.int2bytes_size + self.int2bytes_size
+        self.DISTANCE_SIZE = self.DISTANCE_SIZE.to_bytes(self.int2bytes_size, "big")
 
-    ## DEBUG PACKET
-    #debug_packet = bytearray([IMAGE_TYPE, AUDIO_TYPE, DISTANCE_TYPE, IMU_TYPE, IMU_TYPE, IMU_TYPE])
-    #client.sendto( IMU_SIZE + timestamp + bytes([IMU_TYPE]) + debug_packet, (ip, port))
+        self.HEADER_SIZE_DIM = self.HEADER_LENGTH - self.int2bytes_size
 
-    if verbose == True:
-        print("Transmission completed")
+        # camera
+        self.picture_quality = 30 # going higher than 30 creates ENOMEM error (led green)
+        sensor.reset()
+        sensor.set_framesize(sensor.QVGA)
+        sensor.set_pixformat(sensor.RGB565)
 
-connect()
+        # distance sensor
+        self.tof = VL53L1X(I2C(2))
+
+        # microphone
+        CHANNELS = 1
+        self.mic_buf = []
+        self.audio_buf = None
+        audio.init(channels=CHANNELS, frequency=16000, gain_db=24, highpass=0.9883)
+        audio.start_streaming(self.audio_callback) # Start audio streaming
+
+        # IMU
+        self.lsm = LSM6DSOX(SPI(5), cs=Pin("PF6", Pin.OUT_PP, Pin.PULL_UP))
+
+    def audio_callback(self, buf):
+        self.mic_buf.append(buf)
+
+        if len(self.mic_buf) > 20:
+            del self.mic_buf[:10]
+
+    def connect(self):
+        if self.verbose == True:
+            print("Connecting to wifi network", self.ssid)
+        self.wlan.active(False)
+        time.sleep(2)
+        self.wlan.active(True)
+        self.wlan.connect(self.ssid, self.password)
+        while not self.wlan.isconnected():
+            self.error_network.on()
+            time.sleep(1)
+        self.error_network.off()
+        if self.verbose == True:
+            print(self.wlan.ifconfig())
+
+    def connect_TCP(self):
+        connected = False
+        while not connected:
+            try:
+                # Create a socket (SOCK_STREAM means a TCP socket)
+                self.client = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+                # Connect to TCP server and send data
+                self.client.connect((self.ip, self.port))
+                connected = True
+            except:
+                if self.verbose:
+                    print("Waiting for TCP connection to be established...")
+                continue
+
+    def connect_UDP(self):
+        connected = False
+        while not connected:
+            try:
+                # Create a socket (SOCK_DGRAM means a UDP socket)
+                client = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+                connected = True
+            except:
+                if self.verbose:
+                    print("Waiting for UDP connection to be initiated...")
+                continue
 
 
-while True:
-    try:
-        if not wlan.isconnected():
-            connect()
+    def sense_and_send(self):
 
-        # error warning reset
-        if error == True:
-            #if verbose == True:
-            print("\033[91mError in the last", error_timeout, "seconds\033[0m")
-            if time.time() - error_time > error_timeout:
-                error_time = 0
-                error_quality.off()
-                error_unforseen.off()
-                error = False
+        # Directions and signs set by evidence
+        acc_y, acc_x, acc_z = self.lsm.accel()  # Accelerometer
+        acc_z = -acc_z
+        gyro_y, gyro_x, gyro_z = self.lsm.gyro()# Gyroscope
+        gyro_z = -gyro_z
 
-        sense_and_send()
+        # Converting IMU values to bytes
+        imu_packet = struct.pack('>ffffff', acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z)
 
-    except (ValueErrorImage, ValueErrorAudio) as e:
-        error = True
-        error_time = time.time()
-        error_quality.on()
-        pass
+        # sensing, first distance and then camera that takes time to save in memory
+        distance = self.tof.read() # class int
+        picture = sensor.snapshot() # class Image, bytes not readable
+
+        # printing sensors output
+        if self.verbose == True:
+            print("Distance:", distance)
+            print("Picture:")
+            print(picture)
+
+        # converting with known size the distance
+        distance = distance.to_bytes(self.int2bytes_size, "big")
+
+        # compressing/converting and sizing the picture
+        picture.compress(self.picture_quality) # class Image, bytes readable as jpeg
+        picture_size = len(picture) # dimension of the compressed picture
+
+        # audio
+        self.audio_buf = bytearray([])
+        if len(self.mic_buf)>1:
+            self.audio_buf += self.mic_buf.pop(0)
+            self.audio_buf += self.mic_buf.pop(0)
+        elif len(self.mic_buf)>0:
+            self.audio_buf += self.mic_buf.pop(0)
+
+        # printing transmission info and data to transmit
+        if self.verbose == True:
+            print("Picture quality:", self.picture_quality)
+            print("Picture size (bytes):", picture_size,  "must be less than", self.packet_size, " bytes")
+            print("Picture:")
+            print(picture)
+            print("Distance size:", self.int2bytes_size, "set by the user")
+            print("Distance:", distance)
+
+            print("Mic Buffer Length (audio packets 0.032ms of 1024 bytes each): ", len(self.mic_buf))
+            print("Mic Buffer Size (bytes): ", len(self.mic_buf)*1024)
+            print("Audio Buffer Size (bytes): ", len(self.audio_buf))
+
+        timestamp = time.ticks_ms()
+        #print("TIMESTAMP: ", timestamp, "PACKET: ", imu_packet, "LENGTH: ", len(imu_packet))
+        timestamp = timestamp.to_bytes(self.int2bytes_size, "big")
 
 
-    except OSError as e: # unforseen error, debug with OpenMV
-        if verbose == True:
-            print("\033[91mError: ", e, "\033[0m")
-        error = True
-        error_time = time.time()
-        error_unforseen.on()
-        pass
+        # picture packet too big, skip transmission
+        if (picture_size + self.HEADER_LENGTH > self.packet_size):
+            raise ValueErrorImage
+        else:
+            pkg_size = self.HEADER_SIZE_DIM + picture_size
+            pkg_size = pkg_size.to_bytes(self.int2bytes_size, "big")
+            try:
+                self.client.sendto( pkg_size + timestamp + bytes([self.IMAGE_TYPE]) + picture, (self.ip, self.port))
+                #client.sendall( pkg_size + timestamp + bytes([IMAGE_TYPE]) + picture)
+            except:
+                if self.CONNECTION_TYPE:
+                    raise TCPError
+                else:
+                    raise UDPError
+                pass
+
+        # audio packet too big, skip transmission
+        if (len(self.audio_buf) + self.HEADER_LENGTH > self.packet_size):
+            raise ValueErrorAudio
+        else:
+            pkg_size = self.HEADER_SIZE_DIM + len(self.audio_buf)
+            pkg_size = pkg_size.to_bytes(self.int2bytes_size, "big")
+            try:
+                self.client.sendto( pkg_size + timestamp + bytes([self.AUDIO_TYPE]) + self.audio_buf, (self.ip, self.port))
+                #client.sendall( pkg_size + timestamp + bytes([AUDIO_TYPE]) + audio_buf)
+            except:
+                if self.CONNECTION_TYPE:
+                    raise TCPError
+                else:
+                    raise UDPError
+                pass
+
+        try:
+            self.client.sendto( self.DISTANCE_SIZE + timestamp + bytes([self.DISTANCE_TYPE]) + distance, (self.ip, self.port))
+            #client.sendall( DISTANCE_SIZE + timestamp + bytes([DISTANCE_TYPE]) + distance)
+        except:
+            if self.CONNECTION_TYPE:
+                raise TCPError
+            else:
+                raise UDPError
+            pass
+
+        try:
+            self.client.sendto( self.IMU_SIZE + timestamp + bytes([self.IMU_TYPE]) + imu_packet, (self.ip, self.port))
+            #client.sendall( IMU_SIZE + timestamp + bytes([IMU_TYPE]) + imu_packet)
+        except:
+            if self.CONNECTION_TYPE:
+                raise TCPError
+            else:
+                raise UDPError
+            pass
+
+        ## DEBUG PACKET
+        #debug_packet = bytearray([IMAGE_TYPE, AUDIO_TYPE, DISTANCE_TYPE, IMU_TYPE, IMU_TYPE, IMU_TYPE])
+        #client.sendto( IMU_SIZE + timestamp + bytes([IMU_TYPE]) + debug_packet, (ip, port))
+
+        if self.verbose == True:
+            print("Transmission completed")
+
+    def run(self):
+
+        while True:
+            try:
+                if not self.wlan.isconnected():
+                    self.connect()
+
+                # error warning reset
+                if self.error == True:
+                    print("\033[91mError in the last", self.error_timeout, "seconds\033[0m")
+                    if time.time() - self.error_time > self.error_timeout:
+                        self.error_time = 0
+                        self.error_network.off()
+                        self.error_quality.off()
+                        self.error_unforseen.off()
+                        self.error = False
+
+                self.sense_and_send()
+
+            except (ValueErrorImage, ValueErrorAudio) as e:
+                self.error = True
+                self.error_time = time.time()
+                self.error_quality.on()
+                pass
 
 
-# Stop audio streaming
-audio.stop_streaming()
+            except TCPError as e:
+                self.error = True
+                self.error_time = time.time()
+                self.error_network.on()
+                self.connect_TCP()
+                pass
+
+            except UDPError as e:
+                self.error = True
+                self.error_time = time.time()
+                self.error_network.on()
+                self.connect_UDP()
+                pass
+
+
+            except OSError as e: # unforseen error, debug with OpenMV
+                if self.verbose == True:
+                    print("\033[91mError: ", e, "\033[0m")
+                self.error = True
+                self.error_time = time.time()
+                self.error_unforseen.on()
+                pass
+
+
+def main():
+
+    manager = StreamManager()
+
+    manager.connect()
+
+    manager.run()
+
+
+    # Stop audio streaming
+    audio.stop_streaming()
+
+if __name__ == "__main__":
+    main()
+
+
+
+
