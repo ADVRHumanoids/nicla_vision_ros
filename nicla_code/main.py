@@ -28,6 +28,8 @@ from machine import Pin
 from machine import SPI
 import struct
 
+import json
+
 
 class ValueErrorImage(Exception):
     # Raised when the picture packet is too big (>65000 bytes)
@@ -60,10 +62,10 @@ class UDPError(Exception):
 
 
 class StreamManager():
-    def __init__(self): #connection type, ssid, pwd, ip, verbose
+    def __init__(self, ssid, pwd, ip, connection_type, verbose):
 
         # warning settings
-        self.verbose = False
+        self.verbose = verbose #False
         self.error_timeout = 5 # seconds to display error warning led
 
         # error handling init
@@ -77,14 +79,14 @@ class StreamManager():
         # CONNECTION TYPE is
         # 1 for TCP, or
         # 0 for UDP
-        self.CONNECTION_TYPE = 1
+        self.CONNECTION_TYPE = connection_type
 
         # wifi ssid and password
-        self.ssid = "DamianoHotspot"
-        self.password = "DamianoHotspot"
+        self.ssid = ssid #"DamianoHotspot"
+        self.password = pwd #"DamianoHotspot"
 
         # server address and port
-        self.ip = "10.240.23.49"
+        self.ip = ip #"10.240.23.49"
         self.port = 8002
 
         # wifi init
@@ -351,11 +353,35 @@ class StreamManager():
 
 def main():
 
-    manager = StreamManager()
+    try:
+#        f = open('./config.json', 'w')
+#        print(dir(f))
+#        print(f.readline(0))
+#        print("AAAAAAAAAAAAAA")
+        params = None
+        with open('config.json', 'r') as f:
+            data = f.read()
+            params = json.loads(data)
 
-    manager.connect()
+        if params == None:
+            print("No parameters in the config file")
+            raise Exception
+        ssid = params["ssid"]
+        pwd = params["password"]
+        ip = params["ip"]
+        connection_type = params["connection_type"]
+        verbose = params["verbose"]
 
-    manager.run()
+        manager = StreamManager(ssid, pwd, ip, connection_type, verbose)
+
+        manager.connect()
+
+        manager.run()
+
+
+    except Exception as e:
+        print("Exception caught in main: ", e)
+        pass
 
 
     # Stop audio streaming
