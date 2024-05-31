@@ -26,8 +26,7 @@ catkin_package()
 #############
 
 catkin_install_python(PROGRAMS
-  scripts/nicla_receiver_ros.py
-  scripts/NiclaReceiverUDP.py
+  scripts/nicla_receiver_ros
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
