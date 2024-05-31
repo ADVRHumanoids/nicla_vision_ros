@@ -15,6 +15,7 @@ find_package(OpenCV)
 ###################################
 
 catkin_package()
+catkin_python_setup()
 
 ###########
 ## Build ##
@@ -25,13 +26,15 @@ catkin_package()
 ## Install ##
 #############
 
+install(DIRECTORY launch/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
+  FILES_MATCHING PATTERN "*.launch"
+)
+
 catkin_install_python(PROGRAMS
   scripts/nicla_receiver_ros
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
-install(DIRECTORY launch/
-  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/launch
-  FILES_MATCHING PATTERN "*.launch"
-)
+
 
