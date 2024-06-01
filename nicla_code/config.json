@@ -1,7 +1,0 @@
-{ 
-    "ssid": "DamianoHotspot",
-    "password": "DamianoHotspot",
-    "ip": "10.240.23.49",
-    "connection_type": 1,
-    "verbose": false 
-}
