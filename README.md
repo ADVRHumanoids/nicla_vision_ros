@@ -53,19 +53,19 @@ Follow the following two steps for enjoying your Arduino Nicla Vision board with
     $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" <optional arguments>
     ```
     Set the `receiver_ip` with the ip address of your ROS-running machine.
-    You can get by running the command:
+    You can get it by running the command:
     ```bash
     $ ifconfig
     ```
     and taking the inet address under the enp voice.
   
-    Using the <optional arguments>, you can decide which sensor to simulate and which socket type, TCP or UDP,  to use (connection_type:="tcp" or "udp").
+    Using the `<optional arguments>`, you can decide which sensor to simulate and which socket type, TCP or UDP,  to use (connection_type:="tcp" or "udp").
     
 - For simulating the Arduino Nicla Vision in Gazebo and Rviz:
      ```bash
     $ roslaunch nicla_vision_ros nicla_sim.launch <optional arguments>
     ```
-    Using the <optional arguments>, you can decide if to run the simulation in gazebo or in rviz, and which sensor to simulate (everything set to true as default). 
+    Using the `<optional arguments>`, you can decide if to run the simulation in gazebo or in rviz, and which sensor to simulate (everything set to true as default). 
     
 ### 2. Arduino Nicla Vision setup
 Turn on your Arduino Nicla Vision, after having completed its setup following the steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git). 
