@@ -6,7 +6,7 @@
 -------------------
 
 ## Description
-This ROS package enables the Nicla Vision board to be ready-to-use in the ROS world! :boom:
+This ROS package enables the [Arduino Nicla Vision](https://docs.arduino.cc/hardware/nicla-vision/) board to be ready-to-use in the ROS world! :boom:
 
 The implemented architecture is described in the above image: the Arduino Nicla Vision board streams the sensors data to a ROS-running machine through TCP/UDP socket. This package will be running on the ROS-running machine, allowing to deserialize the received info, and stream it in the corresponding ROS topics 
 
