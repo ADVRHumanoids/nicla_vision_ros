@@ -1,6 +1,8 @@
  # NICLABOX
 <img src="https://hhcm.iit.it/image/layout_set_logo?img_id=1354382&t=1715615054101" alt="Powered by IIT HHCM" width="400"/>
-
+<div style="text-align: center;">
+    <img src="https://hhcm.iit.it/image/layout_set_logo?img_id=1354382&t=1715615054101" alt="Powered by IIT HHCM" width="200"/>
+</div>
 # Nicla Vision ROS package 
 
 This software allows to use the Arduino Nicla Vision to stream the recorded picture and distance measurement with UDP.
