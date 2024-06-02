@@ -1,13 +1,16 @@
 # Nicla Vision ROS package 
 :rocket: Check out the ROS2 version: [Nicla Vision ROS2 repository](https://github.com/ADVRHumanoids/nicla_vision_ros2.git)
 
-<img src="https://hhcm.iit.it/image/layout_set_logo?img_id=1354382&t=1715615054101" alt="Powered by IIT HHCM" width="300"/>
+![Alt Text](assets/Nicla_ROSpkg_Architecture.png)
 
 -------------------
 
 ## Description
-This ROS package enables the Nicla Vision board to be ready-to-use in the ROS world!
-It allows to stream all the sensor's data of the small form factor board in the corresponding ROS topics:
+This ROS package enables the Nicla Vision board to be ready-to-use in the ROS world! :boom:
+
+The implemented architecture is described in the above image: the Arduino Nicla Vision board streams the sensors data to a ROS-running machine through TCP/UDP socket. This package will be running on the ROS-running machine, allowing to deserialize the received info, and stream it in the corresponding ROS topics 
+
+Here a list of the available sensors with their respective ROS topics:
 - **2MP camera** streams on
     - `/nicla/camera/camera_info` 
     - `/nicla/camera/image_raw`
@@ -21,10 +24,7 @@ It allows to stream all the sensor's data of the small form factor board in the 
 - **Imu** streams on:
     - `/nicla/imu`
 
-The implemented architecture is described in the below image:
-![Alt Text](assets/Nicla_ROSpkg_Architecture.png)
-
-The user can choose if this package should receive the sensor's data by UDP or TCP socket connection, providing just an ip address. Moreover, the user can decide which sensor to stream within the ROS environment. 
+The user can choose if this package should receive the sensors data by UDP or TCP socket connection, providing just an ip address. Moreover, the user can decide which sensor to stream within the ROS environment. 
 In this repository you can find the Python code optimised for receiving the data by the board, and subsequently publishing them through ROS topics.
 
 ## Table of Contents 
@@ -83,7 +83,7 @@ Here some useful links:
 Distributed under the Apache-2.0 License. See LICENSE for more information.
 
 # Citation
-If you use this work or take inspiration from it, please cite:
+:raised_hands: If you use this work or take inspiration from it, please cite:
 ```bash
 @inproceedings{delbianco2024dagana,
   title={},
