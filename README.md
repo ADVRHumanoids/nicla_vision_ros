@@ -7,10 +7,6 @@
 
 ## Description
 
-
-https://github.com/ADVRHumanoids/nicla_vision_ros/assets/63496571/699b265c-3f6a-4a9d-8d6c-fccf6bd39227
-
-
 This ROS package enables the [Arduino Nicla Vision](https://docs.arduino.cc/hardware/nicla-vision/) board to be ready-to-use in the ROS world! :boom:
 
 The implemented architecture is described in the above image: the Arduino Nicla Vision board streams the sensors data to a ROS-running machine through TCP/UDP socket. This package will be running on the ROS-running machine, allowing to deserialize the received info, and stream it in the corresponding ROS topics 
@@ -36,8 +32,9 @@ In this repository you can find the Python code optimised for receiving the data
 1. [Installation](#installation)
 2. [Usage](#usage)
 3. [Package List](#package-list)
-4. [License](#license)
-5. [Cite](#citation)
+4. [Video](#video)
+5. [License](#license)
+6. [Cite](#citation)
    
 -------------------
 
@@ -78,8 +75,11 @@ Follow the following two steps for enjoying your Arduino Nicla Vision board with
     
 ### 2. Arduino Nicla Vision setup
 Turn on your Arduino Nicla Vision, after having completed its setup following the steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git). 
-When you power on your Arduino Nicla Vision, it will automatically connect to the network and it will start streaming to your ROS-running machine .
+When you power on your Arduino Nicla Vision, it will automatically connect to the network and it will start streaming to your ROS-running machine.
 
+# Video Demonstration
+
+https://github.com/ADVRHumanoids/nicla_vision_ros/assets/63496571/699b265c-3f6a-4a9d-8d6c-fccf6bd39227
 
 # Package List
 Here some useful links:
