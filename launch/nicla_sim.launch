@@ -3,7 +3,7 @@
 
     <arg name="gazebo" default="true"/>
     <arg name="rviz" default="true"/>
-    <arg name="rviz_config" default="$(find dagana_urdf)/rviz/dagana.rviz"/>
+    <arg name="rviz_config" default="$(find nicla_vision_ros)/config/rviz/nicla.rviz"/>
 
     <arg name="nicla_camera" default="true"/>
     <arg name="nicla_tof" default="true"/>
