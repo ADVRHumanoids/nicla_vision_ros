@@ -22,24 +22,25 @@
                 nicla_imu:=$(arg nicla_imu)
                 "/>
 
-    <include file="$(find gazebo_ros)/launch/empty_world.launch">
-        <arg name="paused" value="false"/>
-        <arg name="use_sim_time" value="true"/>
-        <arg name="gui" value="true"/>
-        <arg name="recording" value="false"/>
-        <arg name="debug" value="false"/>
-        <arg name="verbose" value="true"/>
-        <arg name="physics" value="ode"/>
-    </include>
+    <group if="$(arg gazebo)">
+	    <include file="$(find gazebo_ros)/launch/empty_world.launch">
+		<arg name="paused" value="false"/>
+		<arg name="use_sim_time" value="true"/>
+		<arg name="gui" value="true"/>
+		<arg name="recording" value="false"/>
+		<arg name="debug" value="false"/>
+		<arg name="verbose" value="true"/>
+		<arg name="physics" value="ode"/>
+	    </include>
 
-    <node name="nicla_urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen"
-            args="-urdf -model nicla -param robot_description -z 0.1 -R 0 -P 0 -Y 0"/>
+           <node name="nicla_urdf_spawner" pkg="gazebo_ros" type="spawn_model" respawn="false" output="screen" args="-urdf -model nicla -param robot_description -z 0.1 -R 0 -P 0 -Y 0"/>
+    </group>
 
     <node pkg="robot_state_publisher" type="robot_state_publisher" name="robot_state_publisher" output="screen" >
         <param name="publish_frequency" type="double" value="250.0" />
     </node> 
-
-    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(find nicla_vision_ros)/config/rviz/nicla.rviz">
+ 
+    <node pkg="rviz" type="rviz" name="rviz" output="screen" args="-d $(arg rviz_config)" if="$(arg rviz)">
     </node> 
 
 </launch>
