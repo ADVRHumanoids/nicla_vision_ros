@@ -1,4 +1,5 @@
 # Nicla Vision ROS package 
+:rocket: Check out the ROS2 version: [Nicla Vision ROS2 repository](https://github.com/ADVRHumanoids/nicla_vision_ros2.git)
 
 <img src="https://hhcm.iit.it/image/layout_set_logo?img_id=1354382&t=1715615054101" alt="Powered by IIT HHCM" width="300"/>
 
@@ -71,10 +72,15 @@ Follow the following two steps for enjoying your Arduino Nicla Vision board with
 Turn on your Arduino Nicla Vision, after having completed its setup following the steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git). 
 When you power on your Arduino Nicla Vision, it will automatically connect to the network and it will start streaming to your ROS-running machine .
 
-  
+
+# Package List
+Here some useful links:
+
+- [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git)
+- [Nicla Vision ROS2 repository](https://github.com/ADVRHumanoids/nicla_vision_ros2.git)
 
 # License
-Distributed under the BSD-3-Clause License. See LICENSE for more information.
+Distributed under the Apache-2.0 License. See LICENSE for more information.
 
 # Citation
 If you use this work or take inspiration from it, please cite:
@@ -86,8 +92,3 @@ If you use this work or take inspiration from it, please cite:
   year={}
 }
 ```
-
-# Authors
-This software is provided by:
-- [Davide Torielli](https://github.com/edodelbianco)
-- [Damiano Gasperini](https://github.com/FedericoRollo)
