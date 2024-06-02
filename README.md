@@ -30,13 +30,14 @@ In this repository you can find the Python code optimised for receiving the data
 ## Table of Contents 
 1. [Installation](#installation)
 2. [Usage](#usage)
-3. [License](#license)
-4. [Contact](#contact)
+3. [Package List](#package-list)
+4. [License](#license)
+5. [Cite](#citation)
    
 -------------------
 
 # Installation
-Step-by-step instructions on how to get the ROS package running (tested on ROS noetic).
+Step-by-step instructions on how to get the ROS package running (tested on ROS Noetic).
 
 ```bash
 $ cd <your_workpace>/src
@@ -46,7 +47,9 @@ $ catkin build
 $ source <your_workpace>/devel/setup.bash
 ```
 
-## Usage 
+**Note:** binary package will be released soon for ROS Noetic!
+
+# Usage 
 Follow the following two steps for enjoying your Arduino Nicla Vision board with ROS.
 ### 1. Run the ROS package
 - For receiving sensors data from the board and 
@@ -77,13 +80,14 @@ When you power on your Arduino Nicla Vision, it will automatically connect to th
 Here some useful links:
 
 - [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git)
+- [Nicla Vision ROS repository](https://github.com/ADVRHumanoids/nicla_vision_ros.git)
 - [Nicla Vision ROS2 repository](https://github.com/ADVRHumanoids/nicla_vision_ros2.git)
 
 # License
 Distributed under the Apache-2.0 License. See LICENSE for more information.
 
-# Citation
-:raised_hands: If you use this work or take inspiration from it, please cite:
+# Citation 
+:raised_hands: If you use this work or take inspiration from it, please cite (publication in progress):
 ```bash
 @inproceedings{delbianco2024dagana,
   title={},
