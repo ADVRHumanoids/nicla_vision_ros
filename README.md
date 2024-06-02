@@ -1,5 +1,5 @@
 # Nicla Vision ROS package 
-:rocket: Check out the ROS2 version: [Nicla Vision ROS2 repository](https://github.com/ADVRHumanoids/nicla_vision_ros2.git)
+:rocket: Check out the ROS2 version: [Nicla Vision ROS2 repository](https://github.com/ADVRHumanoids/nicla_vision_ros2.git) :rocket:
 
 ![Alt Text](assets/Nicla_ROSpkg_Architecture.png)
 
