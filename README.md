@@ -52,32 +52,39 @@ $ source <your_workpace>/devel/setup.bash
 **Note:** binary package will be released soon for ROS Noetic!
 
 # Usage 
-Follow the following two steps for enjoying your Arduino Nicla Vision board with ROS.
+Follow the below two steps for enjoying your Arduino Nicla Vision board with ROS!
 ### 1. Run the ROS package
 -  Launch the package:
     ```bash
     $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" connection_type:="tcp/udp" <optional arguments>
     ```
-    Set the `receiver_ip` with the IP address of your ROS-running machine.
-    You can get this IP address by executing the following command:
-    ```bash
-    $ ifconfig
-    ```
-    and taking the "inet" address under the "enp" voice.
-    Set the socket type to be used, either TCP or UDP (connection_type:="tcp" or "udp").
-    Furthermore, using the `<optional arguments>`, you can decide which sensor to be streamed in ROS (e.g. `enable_imu:=true enable_range:=true enable_audio:=false enable_audio_stamped:=false enable_camera_compressed:=true enable_camera_raw:=false`) and on which socket port (default `receiver_port:=8002`).
+    - Set the `receiver_ip` with the IP address of your ROS-running machine.
+        You can get this IP address by executing the following command:
+        ```bash
+        $ ifconfig
+        ```
+        and taking the "inet" address under the "enp" voice.
+    - Set the socket type to be used, either TCP or UDP (`connection_type:="tcp"` or `"udp"`).
+    
+    Furthermore, using the `<optional arguments>`, you can decide:
+    - which sensor to be streamed in ROS
+
+      (e.g. `enable_imu:=true enable_range:=true enable_audio:=true enable_audio_stamped:=false enable_camera_compressed:=true enable_camera_raw:=true`), and
+    - on which socket port (default `receiver_port:=8002`).
 
     Once you run it, you will be ready for receiving the sensors data transmitted by the board, so now you can move ahead to point **[2. Arduino Nicla Vision setup](#2-arduino-nicla-vision-setup)**. 
     
-- For simulating the Arduino Niclaa Vision in Gazebo and Rviz:
+- For simulating the Arduino Nicla Vision in Gazebo and Rviz:
      ```bash
     $ roslaunch nicla_vision_ros nicla_sim.launch <optional arguments>
     ```
-    Using the `<optional arguments>`, you can decide if to run the simulation in gazebo or in rviz, and which sensor to simulate (everything set to true as default). 
+    Using the `<optional arguments>`, you can decide if to run the simulation in Gazebo or in Rviz, and which sensor to simulate (everything set to true as default). 
     
 ### 2. Arduino Nicla Vision setup
-Turn on your Arduino Nicla Vision, after having completed its setup following the steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git). 
+After having completed the setup steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git), just turn on your Arduino Nicla Vision. 
 When you power on your Arduino Nicla Vision, it will automatically connect to the network and it will start streaming to your ROS-running machine.
+
+**Note:** Look at the LED of your board! The first seconds (about 15 sec) after having turned it on, the LED should be Blue. When the board is correctly connected and it is streaming, the LED will turn off. If you are having connection issues, the LED will be Blue again. If during execution you see a Green LED, it is for unforseen errors. If during execution you see a Red LED, it is for memory errors (usually picture quality too high).
 
 # Video Demonstration
 
