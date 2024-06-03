@@ -12,7 +12,7 @@ This ROS package enables the [Arduino Nicla Vision](https://docs.arduino.cc/hard
 The implemented architecture is described in the above image: the Arduino Nicla Vision board streams the sensors data to a ROS-running machine through TCP/UDP socket. This package will be running on the ROS-running machine, allowing to deserialize the received info, and stream it in the corresponding ROS topics 
 
 Here a list of the available sensors with their respective ROS topics:
-- **2MP camera** streams on
+- **2MP color camera** streams on
     - `/nicla/camera/camera_info` 
     - `/nicla/camera/image_raw`
     - `/nicla/camera/image_raw/compressed` 
@@ -25,8 +25,8 @@ Here a list of the available sensors with their respective ROS topics:
 - **Imu** streams on:
     - `/nicla/imu`
 
-The user can choose if this package should receive the sensors data by UDP or TCP socket connection, providing just an ip address. Moreover, the user can decide which sensor to stream within the ROS environment. 
-In this repository you can find the Python code optimised for receiving the data by the board, and subsequently publishing them through ROS topics.
+The user can easily configure this package, by launch parameters, to receive sensors data via either UDP or TCP socket connections, specifying also the socket IP address. Moreover, the user can decide which sensor to be streamed within the ROS environment. 
+In this repository you can find the Python code optimised for receiving the data by the board, and subsequently publishing it through ROS topics.
 
 ## Table of Contents 
 1. [Installation](#installation)
@@ -54,20 +54,22 @@ $ source <your_workpace>/devel/setup.bash
 # Usage 
 Follow the following two steps for enjoying your Arduino Nicla Vision board with ROS.
 ### 1. Run the ROS package
-- For receiving sensors data from the board and 
+-  Launch the package:
     ```bash
-    $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" <optional arguments>
+    $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" connection_type:="tcp/udp" <optional arguments>
     ```
-    Set the `receiver_ip` with the ip address of your ROS-running machine.
-    You can get it by running the command:
+    Set the `receiver_ip` with the IP address of your ROS-running machine.
+    You can get this IP address by executing the following command:
     ```bash
     $ ifconfig
     ```
-    and taking the inet address under the enp voice.
-  
-    Using the `<optional arguments>`, you can decide which sensor to simulate and which socket type, TCP or UDP,  to use (connection_type:="tcp" or "udp").
+    and taking the "inet" address under the "enp" voice.
+    Set the socket type to be used, either TCP or UDP (connection_type:="tcp" or "udp").
+    Furthermore, using the `<optional arguments>`, you can decide which sensor to be streamed in ROS (e.g. `enable_imu:=true enable_range:=true enable_audio:=false enable_audio_stamped:=false enable_camera_compressed:=true enable_camera_raw:=false`) and on which socket port (default `receiver_port:=8002`).
+
+    Once you run it, you will be ready for receiving the sensors data transmitted by the board, so now you can move ahead to point **[2. Arduino Nicla Vision setup](#2-arduino-nicla-vision-setup)**. 
     
-- For simulating the Arduino Nicla Vision in Gazebo and Rviz:
+- For simulating the Arduino Niclaa Vision in Gazebo and Rviz:
      ```bash
     $ roslaunch nicla_vision_ros nicla_sim.launch <optional arguments>
     ```
