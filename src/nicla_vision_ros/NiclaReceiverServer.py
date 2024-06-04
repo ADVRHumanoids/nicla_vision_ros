@@ -3,7 +3,7 @@
 import queue
 import socketserver
 from threading import Thread
-import rospy
+import time
 
 IMAGE_TYPE = 0b00
 AUDIO_TYPE = 0b01
@@ -19,35 +19,40 @@ class UDPHandler(socketserver.BaseRequestHandler):
         #socket = self.request[1]
         
         #not used for udp
-        #size_packet = int.from_bytes(packet[:4], "big")    
+        size_packet = int.from_bytes(packet[:4], "big")   
+
+        if size_packet == len(packet[4:]):
  
-        timestamp = rospy.Time.now() #int.from_bytes(packet[4:8], "big")
-        data_type = packet[8]
-        data = packet[9:]
+            timestamp = time.time() #int.from_bytes(packet[4:8], "big")
+            data_type = packet[8]
+            data = packet[9:]
+            
+            if data_type == RANGE_TYPE:
+                if self.server.enable_range:
+                    self.server.range_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
+
+            elif data_type == IMAGE_TYPE:
+                if self.server.enable_image:
+                    self.server.image_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
+
+            elif data_type == AUDIO_TYPE:
+                if self.server.enable_audio:
+                    self.server.audio_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
+
+            elif data_type == IMU_TYPE:
+                if self.server.enable_imu:
+                    self.server.imu_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
         
-        if data_type == RANGE_TYPE:
-            if self.server.enable_range:
-                self.server.range_buffer.put_nowait((timestamp, data))
-            else:
-                pass
-
-        elif data_type == IMAGE_TYPE:
-            if self.server.enable_image:
-                self.server.image_buffer.put_nowait((timestamp, data))
-            else:
-                pass
-
-        elif data_type == AUDIO_TYPE:
-            if self.server.enable_audio:
-                self.server.audio_buffer.put_nowait((timestamp, data))
-            else:
-                pass
-
-        elif data_type == IMU_TYPE:
-            if self.server.enable_imu:
-                self.server.imu_buffer.put_nowait((timestamp, data))
-            else:
-                pass
+        else:  
+            print("Warning: received packet of length {}, but expected length was {}!".format(len(packet[4:]), size_packet))
 
 class NiclaReceiverUDP(socketserver.UDPServer):
 
@@ -168,7 +173,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                 total_length = len(bytes_packets)                 
                 loop_termination_flag = True
 
-                timestamp = rospy.Time.now() 
+                timestamp = time.time()
                 
                 while loop_termination_flag:
                     size_packet = int.from_bytes(bytes_packets[:4], "big")
