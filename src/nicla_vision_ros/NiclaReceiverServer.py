@@ -19,8 +19,7 @@ class UDPHandler(socketserver.BaseRequestHandler):
         #with udp, self.request is a pair (data, socket)
         packet = self.request[0]
         #socket = self.request[1]
-        
-        #not used for udp
+         
         size_packet = int.from_bytes(packet[:4], "big")   
 
         if size_packet == len(packet[4:]):
@@ -144,7 +143,6 @@ class NiclaReceiverTCP(socketserver.TCPServer):
     
     def __init__(self, server_ip, server_port, enable_range=False, enable_image=False, enable_audio=False, enable_imu=False):
          
-
         super().__init__((server_ip, server_port), TCPHandler)
 
         self.enable_range = enable_range
@@ -254,10 +252,8 @@ class NiclaReceiverTCP(socketserver.TCPServer):
         print("stopping")
         self.thread_regularizer = False
         self.sorting_thread.join()
-        
         self.shutdown()
         self.server_thread.join()
-
         self.server_close()
 
         
