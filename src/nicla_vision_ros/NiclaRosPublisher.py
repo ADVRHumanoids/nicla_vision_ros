@@ -13,7 +13,7 @@ import numpy as np
 from nicla_vision_ros import NiclaReceiverUDP, NiclaReceiverTCP
 
 # TBD move it on a different utils py
-def noise_gate(data, threshold=500):
+def noise_gate(data, threshold=50):
     """Apply a simple noise gate to the audio data."""
     gated_data = np.where(np.abs(data) < threshold, 0, data)
     return gated_data
@@ -182,12 +182,18 @@ class NiclaRosPublisher:
             if (audio_data := self.nicla_receiver_server.get_audio()) is not None:
 
                 if self.enable_audio:
+                    data = audio_data[1]
+                    
                     # manipulate data using numPy
-                    data = np.frombuffer(audio_data[1], dtype='int16') # NOTE check that audio data buffer is quantized at 16 bit 
+                    data = np.frombuffer(data, dtype='int16') # NOTE check that audio data buffer is quantized at 16 bit 
+                    #data = data[::2]
                     # noise gate TBD tune it
-                    gated_data = noise_gate(data)
+                    gated_data = noise_gate(data) 
+                    
                     # fill and send the msg
                     self.audio_msg.data = gated_data.tobytes()
+                    
+                    #self.audio_msg.data = data
                     self.audio_pub.publish(self.audio_msg)
 
                 if self.enable_audio_stamped:
