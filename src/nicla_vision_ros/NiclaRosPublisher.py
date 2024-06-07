@@ -6,6 +6,7 @@ from sensor_msgs.msg import CompressedImage, Image, CameraInfo
 from sensor_msgs.msg import Range
 from sensor_msgs.msg import Imu
 from audio_common_msgs.msg import AudioData, AudioDataStamped, AudioInfo
+from std_msgs.msg import Int16MultiArray
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 import numpy as np
@@ -81,6 +82,9 @@ class NiclaRosPublisher:
             audio_topic = nicla_name + "/audio"
             self.audio_msg = AudioData()
             self.audio_pub = rospy.Publisher(audio_topic, AudioData, queue_size=10)
+
+            self.audio_raw_pub = rospy.Publisher('audio', Int16MultiArray, queue_size=10)
+
 
         if self.enable_audio_stamped:
             audio_stamped_topic = nicla_name + "/audio_stamped"
@@ -183,18 +187,28 @@ class NiclaRosPublisher:
 
                 if self.enable_audio:
                     data = audio_data[1]
+                    #print("audio data from nicla are ", len(data))
+
+                    audio_data = np.frombuffer(data, dtype=np.int16).tolist()
+                    #print("interpreting them as 16 bit we have a buffer with ", len(audio_data))
+
+                    msg = Int16MultiArray(data=audio_data)
+                    self.audio_raw_pub.publish(msg)
                     
+                    # VARIOUS TEST TBD
+
                     # manipulate data using numPy
-                    data = np.frombuffer(data, dtype='int16') # NOTE check that audio data buffer is quantized at 16 bit 
+                    ##data_ros_audio = np.frombuffer(data, dtype='int16') # NOTE check that audio data buffer is quantized at 16 bit 
+                    
                     #data = data[::2]
                     # noise gate TBD tune it
-                    gated_data = noise_gate(data) 
+                    ##gated_data = noise_gate(data_ros_audio) 
                     
                     # fill and send the msg
-                    self.audio_msg.data = gated_data.tobytes()
+                    ##self.audio_msg.data = gated_data.tobytes()
                     
                     #self.audio_msg.data = data
-                    self.audio_pub.publish(self.audio_msg)
+                    ##self.audio_pub.publish(self.audio_msg)
 
                 if self.enable_audio_stamped:
                     self.audio_stamped_msg.header.stamp = rospy.Time.from_sec(audio_data[0])
