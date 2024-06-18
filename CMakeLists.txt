@@ -31,6 +31,14 @@ install(DIRECTORY launch/
   FILES_MATCHING PATTERN "*.launch"
 )
 
+install(DIRECTORY config/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/config
+)
+
+install(DIRECTORY urdf/
+  DESTINATION ${CATKIN_PACKAGE_SHARE_DESTINATION}/urdf
+)
+
 catkin_install_python(PROGRAMS
   scripts/nicla_receiver_ros
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}

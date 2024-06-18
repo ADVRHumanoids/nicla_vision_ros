@@ -31,12 +31,6 @@ class NiclaRosPublisher:
         self.enable_audio_stamped = rospy.get_param("~enable_audio_stamped", False)
         self.enable_imu = rospy.get_param("~enable_imu", True)
 
-
-        self.offset_angular_x = 0.0
-        self.offset_angular_y = 0.0
-        self.offset_angular_z = 0.0
-        self.counter_offset = 1
-
         if self.enable_range:
             range_topic = nicla_name + "/tof" 
             self.range_pub = rospy.Publisher(range_topic, Range, queue_size=5)
@@ -44,8 +38,8 @@ class NiclaRosPublisher:
             self.range_msg.header.frame_id = nicla_name + "_tof"
             self.range_msg.radiation_type = Range.INFRARED
             self.range_msg.min_range = 0
-            self.range_msg.max_range = 3
-            self.range_msg.field_of_view = 0.171239 #27degrees according to arduino doc
+            self.range_msg.max_range = 4
+            self.range_msg.field_of_view = 0.471239 #27degrees according to arduino doc
 
         if self.enable_camera_raw:
             #default topic name of image transport (which is not available in python so we do not use it)
@@ -131,7 +125,7 @@ class NiclaRosPublisher:
 
         if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
 
-            self.range_msg.header.stamp = rospy.Time.now() #rospy.Time.from_sec(range[0]/1000)
+            self.range_msg.header.stamp = rospy.Time.from_sec(range[0])
             self.range_msg.range = int.from_bytes(range[1], "big")/1000
             self.range_pub.publish(self.range_msg)
 
@@ -141,12 +135,12 @@ class NiclaRosPublisher:
             if (image := self.nicla_receiver_server.get_image()) is not None:
 
                 ##Publish info
-                self.camera_info_msg.header.stamp = rospy.Time.now() #rospy.Time.from_sec(image[0]/1000)
+                self.camera_info_msg.header.stamp = rospy.Time.from_sec(image[0])
                 self.camera_info_pub.publish(self.camera_info_msg)
 
                 ### PUBLISH COMPRESSED
                 if self.enable_camera_compressed:
-                    self.image_compressed_msg.header.stamp = rospy.Time.now() #rospy.Time.from_sec(image[0]/1000)
+                    self.image_compressed_msg.header.stamp = rospy.Time.from_sec(image[0])
                     self.image_compressed_msg.data = image[1]
                     self.image_compressed_pub.publish(self.image_compressed_msg)
 
@@ -158,7 +152,7 @@ class NiclaRosPublisher:
                     # Decode the compressed image
                     img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
 
-                    self.image_raw_msg.header.stamp = rospy.Time.now() #rospy.Time.from_sec(image[0]/1000)
+                    self.image_raw_msg.header.stamp = rospy.Time.from_sec(image[0])
                     self.image_raw_msg.height = img_raw.shape[0]
                     self.image_raw_msg.width = img_raw.shape[1]
                     self.image_raw_msg.encoding = "bgr8"  # Assuming OpenCV returns BGR format
@@ -186,13 +180,13 @@ class NiclaRosPublisher:
                     self.audio_pub.publish(self.audio_msg)
 
                 if self.enable_audio_stamped:
-                    self.audio_stamped_msg.header.stamp = rospy.Time.now() #rospy.Time.from_sec(audio_data[0]/1000)
+                    self.audio_stamped_msg.header.stamp = rospy.Time.from_sec(audio_data[0])
                     self.audio_stamped_msg.audio.data = audio_data[1]
                     self.audio_stamped_pub.publish(self.audio_stamped_msg)
 
         ### IMU DATA
         if self.enable_imu and ((imu := self.nicla_receiver_server.get_imu()) is not None):
-            self.imu_msg.header.stamp = rospy.Time.now() #from_sec(imu[0]/1000)
+            self.imu_msg.header.stamp = rospy.Time.from_sec(imu[0])
 
             try:
                 acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1])
@@ -206,18 +200,6 @@ class NiclaRosPublisher:
             self.imu_msg.linear_acceleration.x = 9.80665 * acc_x
             self.imu_msg.linear_acceleration.y = 9.80665 * acc_y
             self.imu_msg.linear_acceleration.z = 9.80665 * acc_z
-
-            if self.counter_offset < 5 * 500:
-                self.offset_angular_x = self.offset_angular_x + (self.imu_msg.angular_velocity.x - self.offset_angular_x) / self.counter_offset
-                self.offset_angular_y = self.offset_angular_y + (self.imu_msg.angular_velocity.y - self.offset_angular_y) / self.counter_offset
-                self.offset_angular_z = self.offset_angular_z + (self.imu_msg.angular_velocity.z - self.offset_angular_z) / self.counter_offset
-                self.counter_offset += 1
-            
-            else: 
-                self.imu_msg.angular_velocity.x -= self.offset_angular_x
-                self.imu_msg.angular_velocity.y -= self.offset_angular_y
-                self.imu_msg.angular_velocity.z -= self.offset_angular_z
-                         
             self.imu_pub.publish(self.imu_msg)
 
     def stop(self):

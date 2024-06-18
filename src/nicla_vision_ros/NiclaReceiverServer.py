@@ -1,8 +1,11 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 import queue
+import socket
 import socketserver
 from threading import Thread
+import time
+import struct
 
 IMAGE_TYPE = 0b00
 AUDIO_TYPE = 0b01
@@ -16,37 +19,41 @@ class UDPHandler(socketserver.BaseRequestHandler):
         #with udp, self.request is a pair (data, socket)
         packet = self.request[0]
         #socket = self.request[1]
-        
-        #not used for udp
-        #size_packet = int.from_bytes(packet[:4], "big")    
+         
+        size_packet = int.from_bytes(packet[:4], "big")   
+
+        if size_packet == len(packet[4:]):
  
-        timestamp = int.from_bytes(packet[4:8], "big")
-        data_type = packet[8]
-        data = packet[9:]
+            timestamp = time.time() #int.from_bytes(packet[4:8], "big")
+            data_type = packet[8]
+            data = packet[9:]
+            
+            if data_type == RANGE_TYPE:
+                if self.server.enable_range:
+                    self.server.range_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
+
+            elif data_type == IMAGE_TYPE:
+                if self.server.enable_image:
+                    self.server.image_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
+
+            elif data_type == AUDIO_TYPE:
+                if self.server.enable_audio:
+                    self.server.audio_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
+
+            elif data_type == IMU_TYPE:
+                if self.server.enable_imu:
+                    self.server.imu_buffer.put_nowait((timestamp, data))
+                else:
+                    pass
         
-        if data_type == RANGE_TYPE:
-            if self.server.enable_range:
-                self.server.range_buffer.put_nowait((timestamp, data))
-            else:
-                pass
-
-        elif data_type == IMAGE_TYPE:
-            if self.server.enable_image:
-                self.server.image_buffer.put_nowait((timestamp, data))
-            else:
-                pass
-
-        elif data_type == AUDIO_TYPE:
-            if self.server.enable_audio:
-                self.server.audio_buffer.put_nowait((timestamp, data))
-            else:
-                pass
-
-        elif data_type == IMU_TYPE:
-            if self.server.enable_imu:
-                self.server.imu_buffer.put_nowait((timestamp, data))
-            else:
-                pass
+        else:  
+            print("Warning: received packet of length {}, but expected length was {}!".format(len(packet[4:]), size_packet))
 
 class NiclaReceiverUDP(socketserver.UDPServer):
 
@@ -108,15 +115,34 @@ class NiclaReceiverUDP(socketserver.UDPServer):
         
 class TCPHandler(socketserver.BaseRequestHandler):
     def handle(self): 
+        self.request.settimeout(5.0)  # Set a timeout  
+        self.server.nicla_disconnect = False
 
         while True: 
-            packet = self.request.recv(65000)
-            self.server.receiving_buffer.put_nowait(packet) 
+            try:
+                packet = self.request.recv(65000)
+                if not packet:
+                    break 
+                timestamp = time.time()
+                timestamp = struct.pack('>d', timestamp) 
+                packet = timestamp + packet 
+                self.server.receiving_buffer.put_nowait(packet) 
+            except socket.timeout:
+                print("Warning: Nicla disconnected! Resetting server... ")
+                self.server.receiving_buffer.queue.clear()
+                self.server.nicla_disconnect = True
+                break 
+            except Exception as e:
+                print(f"Exception: {e}")
+                self.server.receiving_buffer.queue.clear()
+                self.server.nicla_disconnect = True
+                break  # Break the loop on any other exception 
 
+            
 class NiclaReceiverTCP(socketserver.TCPServer):
-
+    
     def __init__(self, server_ip, server_port, enable_range=False, enable_image=False, enable_audio=False, enable_imu=False):
-
+         
         super().__init__((server_ip, server_port), TCPHandler)
 
         self.enable_range = enable_range
@@ -136,7 +162,8 @@ class NiclaReceiverTCP(socketserver.TCPServer):
         if self.enable_range or self.enable_image or self.enable_audio or self.enable_imu:
             self.receiving_buffer = queue.Queue(maxsize=200)
 
-        self.server_thread = None
+        self.server_thread = None   
+        self.nicla_disconnect = False  
  
 
     def serve(self):
@@ -149,11 +176,18 @@ class NiclaReceiverTCP(socketserver.TCPServer):
     def sorting(self):
 
         bkp_bytes_packets = bytes([])
+        timestamp = None
 
         while self.thread_regularizer:
 
             try:  
                 bytes_packets = self.receiving_buffer.get_nowait()
+                timestamp = struct.unpack('>d', bytes_packets[:8])[0]
+                bytes_packets = bytes_packets[8:]
+
+                if self.nicla_disconnect:
+                    bytes_packets = bytes([])
+                    bkp_bytes_packets = bytes([])
             except:
                 continue
 
@@ -166,7 +200,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
             else:
                 total_length = len(bytes_packets)                 
                 loop_termination_flag = True
-
+                
                 while loop_termination_flag:
                     size_packet = int.from_bytes(bytes_packets[:4], "big")
 
@@ -174,7 +208,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                         packet = bytes_packets[4:size_packet+4]
                         bytes_packets = bytes_packets[size_packet+4:]
 
-                        timestamp = int.from_bytes(packet[:4], "big")
+                        #timestamp = int.from_bytes(packet[:4], "big")
                         
                         data_type = packet[4]
                         data = packet[5:]
@@ -221,6 +255,8 @@ class NiclaReceiverTCP(socketserver.TCPServer):
         self.shutdown()
         self.server_thread.join()
         self.server_close()
+
+        
 
     def get_range(self):
 
