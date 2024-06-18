@@ -7,10 +7,10 @@
     <arg name="connection_type"/> <!-- tcp, udp -->
     <arg name="enable_range" default="true" />
     <arg name="enable_camera_raw" default="true" />
-    <arg name="enable_camera_compressed" default="true" />
+    <arg name="enable_camera_compressed" default="false" />
     <arg name="enable_audio" default="true" />
     <arg name="enable_audio_stamped" default="false" />
-    <arg name="enable_imu" default="true" />
+    <arg name="enable_imu" default="false" />
     
     <node name="nicla_receiver" pkg="nicla_vision_ros" type="nicla_receiver_ros" output="screen" respawn="false" >
         <param name="nicla_name" value="$(arg nicla_name)" />

@@ -6,6 +6,8 @@ import socketserver
 from threading import Thread
 import time
 import struct
+import numpy as np
+import cv2
 
 IMAGE_TYPE = 0b00
 AUDIO_TYPE = 0b01
@@ -177,6 +179,8 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
         bkp_bytes_packets = bytes([])
         timestamp = None
+        first_half = True
+        half_img = None
 
         while self.thread_regularizer:
 
@@ -202,7 +206,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                 loop_termination_flag = True
                 
                 while loop_termination_flag:
-                    size_packet = int.from_bytes(bytes_packets[:4], "big")
+                    size_packet = int.from_bytes(bytes_packets[:4], "little")
 
                     if total_length - 4 >= size_packet:
                         packet = bytes_packets[4:size_packet+4]
@@ -210,7 +214,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
                         #timestamp = int.from_bytes(packet[:4], "big")
                         
-                        data_type = packet[4]
+                        data_type = int.from_bytes(packet[4:5], "little")
                         data = packet[5:]
  
                         if data_type == RANGE_TYPE:
@@ -221,7 +225,25 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
                         elif data_type == IMAGE_TYPE:
                             if self.enable_image:
-                                self.image_buffer.put_nowait((timestamp, data))
+
+                                half_img_bin = np.asarray(bytearray(data), dtype="uint8")
+                                half_img_dec = cv2.imdecode(half_img_bin, cv2.IMREAD_UNCHANGED) 
+                                half_img_dec = np.dstack((half_img_dec[:,:,2], half_img_dec[:,:,1], half_img_dec[:,:,0]))
+
+                                 
+                                if first_half:
+                                    first_half = False
+                                    half_img = half_img_dec
+                                     
+                                else:
+                                    first_half = True
+                                    # Stack the images vertically
+                                    combined_image = np.vstack((half_img_dec, half_img))
+
+                                    _, buffer = cv2.imencode('.png', combined_image)
+                                    binary_buffer = buffer.tobytes()
+                                    self.image_buffer.put_nowait((timestamp, binary_buffer))
+                                    half_img = None
                             else:
                                 pass
 
