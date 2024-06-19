@@ -249,7 +249,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
                         elif data_type == AUDIO_TYPE:
                             if self.enable_audio:
-                                self.audio_buffer.put_nowait((timestamp, data))
+                                self.audio_buffer.put_nowait([timestamp, data])
                             else:
                                 pass
 

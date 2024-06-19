@@ -31,7 +31,7 @@ class TCPHandler(socketserver.BaseRequestHandler):
         while True: 
             try:
                 packet = self.request.recv(65000)
-                # print("LEN RECV: ", len(packet))
+                print("LEN RECV: ", len(packet))
                 # print("IN RECV: ", np.frombuffer(packet, dtype="int16"))
 
                 self.server.pdm_buffer.put_nowait(packet)
@@ -88,7 +88,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
         self.pdm_buffer = queue.Queue(maxsize=60000)
 
-        self.pdm_plotter = Thread(target=self.debug_recv)
+        self.pdm_plotter = Thread(target=self.plotting)
         self.pdm_plotter.daemon = True
         self.pdm_plotter.start()
 
@@ -181,8 +181,9 @@ class NiclaReceiverTCP(socketserver.TCPServer):
             try:  
                 self.bytes_packets = self.pdm_buffer.get_nowait()
                 # print("IN THREAD: ", np.frombuffer(self.bytes_packets, dtype="int16"))
-
-
+                print("LEN CAL: ", len(self.bytes_packets))
+                
+ 
                 new = np.frombuffer(self.bytes_packets, dtype="int16")
                 new = new.tolist()
                 self.numbers.extend(new) 
@@ -201,7 +202,9 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                 #     plt.show()
                 #     self.numbers = []
 
-                if len(self.numbers)>= 16000*5:
+                print("LEN: ", len(self.numbers))
+
+                if len(self.numbers)>= 10000*5:
                     # pcm_data = np.cumsum(self.numbers, dtype=np.int32)
                     # pcm_data = np.array(pcm_data, dtype=np.int16) >> 16
 
@@ -210,8 +213,10 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                     with wave.open("audio.wav", 'w') as wf:
                         wf.setnchannels(1)  # Mono
                         wf.setsampwidth(2)  # 2 bytes (16 bits)
-                        wf.setframerate(16000)
+                        wf.setframerate(10000)
                         wf.writeframes(self.numbers.tobytes())
+
+                        print("recorded")
 
                     break
 
@@ -342,7 +347,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
 if __name__ == "__main__":
  
-    nicla_receiver_server = NiclaReceiverTCP("192.168.159.46", 8002, 
+    nicla_receiver_server = NiclaReceiverTCP("10.240.23.49", 8002, 
                                             enable_range=False, 
                                             enable_image=False,
                                             enable_audio=True,
