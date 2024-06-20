@@ -153,13 +153,13 @@ class NiclaReceiverTCP(socketserver.TCPServer):
         self.enable_imu = enable_imu
 
         if self.enable_range:
-            self.range_buffer = queue.Queue(maxsize=100)
+            self.range_buffer = queue.Queue(maxsize=30)
         if self.enable_image:
-            self.image_buffer = queue.Queue(maxsize=100)
+            self.image_buffer = queue.Queue(maxsize=30)
         if self.enable_audio:
-            self.audio_buffer = queue.Queue(maxsize=100)
+            self.audio_buffer = queue.Queue(maxsize=30)
         if self.enable_imu:
-            self.imu_buffer = queue.Queue(maxsize=100)
+            self.imu_buffer = queue.Queue(maxsize=30)
         
         if self.enable_range or self.enable_image or self.enable_audio or self.enable_imu:
             self.receiving_buffer = queue.Queue(maxsize=200)
