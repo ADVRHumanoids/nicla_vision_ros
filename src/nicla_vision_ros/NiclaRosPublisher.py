@@ -233,7 +233,7 @@ class NiclaRosPublisher:
         if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
 
             self.range_msg.header.stamp = rospy.Time.from_sec(range[0])
-            self.range_msg.range = int.from_bytes(range[1], "big")/1000
+            self.range_msg.range = int.from_bytes(range[1], "little")/1000
             self.range_pub.publish(self.range_msg)
 
         ### PUBLISH IMAGE
