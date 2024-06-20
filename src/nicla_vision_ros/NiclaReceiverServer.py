@@ -223,33 +223,39 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                             else:
                                 pass
 
-                        elif data_type == IMAGE_TYPE:
-                            if self.enable_image:
+                        # elif data_type == IMAGE_TYPE:
+                        #     if self.enable_image:
 
-                                half_img_bin = np.asarray(bytearray(data), dtype="uint8")
-                                half_img_dec = cv2.imdecode(half_img_bin, cv2.IMREAD_UNCHANGED) 
-                                half_img_dec = np.dstack((half_img_dec[:,:,2], half_img_dec[:,:,1], half_img_dec[:,:,0]))
+                        #         half_img_bin = np.asarray(bytearray(data), dtype="uint8")
+                        #         half_img_dec = cv2.imdecode(half_img_bin, cv2.IMREAD_UNCHANGED) 
+                        #         half_img_dec = np.dstack((half_img_dec[:,:,2], half_img_dec[:,:,1], half_img_dec[:,:,0]))
 
                                  
-                                if first_half:
-                                    first_half = False
-                                    half_img = half_img_dec
+                        #         if first_half:
+                        #             first_half = False
+                        #             half_img = half_img_dec
                                      
-                                else:
-                                    first_half = True
-                                    # Stack the images vertically
-                                    combined_image = np.vstack((half_img_dec, half_img))
+                        #         else:
+                        #             first_half = True
+                        #             # Stack the images vertically
+                        #             combined_image = np.vstack((half_img_dec, half_img))
 
-                                    _, buffer = cv2.imencode('.png', combined_image)
-                                    binary_buffer = buffer.tobytes()
-                                    self.image_buffer.put_nowait((timestamp, binary_buffer))
-                                    half_img = None
+                        #             _, buffer = cv2.imencode('.png', combined_image)
+                        #             binary_buffer = buffer.tobytes()
+                        #             self.image_buffer.put_nowait((timestamp, binary_buffer))
+                        #             half_img = None
+                        #     else:
+                        #         pass
+                        
+                        elif data_type == IMAGE_TYPE:
+                            if self.enable_image:
+                                self.image_buffer.put_nowait((timestamp, data))
                             else:
                                 pass
 
                         elif data_type == AUDIO_TYPE:
                             if self.enable_audio:
-                                self.audio_buffer.put_nowait([timestamp, data])
+                                self.audio_buffer.put_nowait((timestamp, data))
                             else:
                                 pass
 

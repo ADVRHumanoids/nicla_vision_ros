@@ -19,6 +19,16 @@ from vosk import Model, KaldiRecognizer
 import json 
 import wave
 
+import whisper  
+import torch 
+import speech_recognition as sr
+from os import path
+from wit import Wit
+
+from threading import Thread
+import audioop
+
+
 
 class SpeechRecognizer:
     def __init__(self):
@@ -27,8 +37,9 @@ class SpeechRecognizer:
         self.CHANNELS = 1
         self.RATE = 8000
         self.CHUNK = 512
-        self.RECORD_SECONDS = 5  # Duration to record audio in seconds
-        self.WAVE_OUTPUT_FILENAME = "/home/dgasperini/output.wav"
+        self.RECORD_SECONDS = 3  # Duration to record audio in seconds
+        self.WAVE_OUTPUT_FILENAME = "/home/dgasperini/output"
+        self.WAVE_OUTPUT_FILENAME_i = 0
          
 
         self.audio_buffer = np.array([], dtype='int16')
@@ -37,13 +48,70 @@ class SpeechRecognizer:
 
         self.command_pub = rospy.Publisher('/verbal_command', String, queue_size=10)
 
-        self.model = Model("/home/dgasperini/ros_ws/src/relax_multi_modal/python/models/en")
-        self.recognizer = KaldiRecognizer(self.model, 16000) # NOTE 16kHz sampling
-        self.recognizer.SetGrammar('["open", "bottle", "cup", "[unk]"]')
+        # self.model = Model("/home/dgasperini/ros_ws/src/relax_multi_modal/python/models/en")
+        # self.recognizer = KaldiRecognizer(self.model, 16000) # NOTE 16kHz sampling
+        # self.recognizer.SetGrammar('["open", "bottle", "cup", "[unk]"]')
+
+        # self.model= whisper.load_model("base")
+        # self.r = sr.Recognizer()
+
+        self.client = Wit("JE3DVMKWDKGRRUALGY2BROTGEO4W7EFW")
+        self.start = False
+
+        self.recognizing_thread = Thread(target=self.recognize_audio) 
+        self.recognizing_thread.start()
         
         rospy.loginfo("Speech recognizer is ready")
 
+
+    def recognize_audio(self):
+        while not rospy.is_shutdown():
+            try:      
+
+                resp = None  
+
+                with open(self.WAVE_OUTPUT_FILENAME+str(self.WAVE_OUTPUT_FILENAME_i)+".wav", 'rb') as f:
+                    resp = self.client.speech(f, {'Content-Type': 'audio/wav', 'Transfer-encoding': 'chunked'})
+                
+                print(str(resp['text']))
+
+                # if result['text']:
+                #         #rospy.loginfo(f"Recognized: {result['text']}")
+                #         self.command_pub.publish(result['text'])
+
+            except Exception as e:
+                pass
+
+
     def process_audio(self, data):
+        tmp = np.frombuffer(data, dtype="int16") #512 -> 1 sec     
+
+        self.audio_buffer = np.concatenate((self.audio_buffer, tmp))
+    
+        self.recording_frames.append(data)
+
+        if not self.start:
+
+            if len(self.audio_buffer) >= 512*10:
+                self.audio_buffer = self.audio_buffer[512*7:]
+
+                self.recording_frames = self.recording_frames[7:]
+
+            energy = audioop.rms(data, 2)
+
+            print("ENERGY: ", energy)
+
+            if energy > 5000:
+                self.start = True 
+
+        #print(len(self.recording_frames))
+        #print(int(self.RATE / self.CHUNK * self.RECORD_SECONDS))
+        if self.start and len(self.recording_frames) >= int(self.RATE / self.CHUNK * self.RECORD_SECONDS):
+            self.save_audio_to_wav()
+            self.start = False
+            self.audio_buffer = np.array([], dtype='int16')
+
+    def process_audio_luca(self, data):
         tmp = np.frombuffer(data, dtype="int16")
         # new = tmp.tolist()
         # self.numbers.extend(new)
@@ -106,13 +174,17 @@ class SpeechRecognizer:
 
 
     def save_audio_to_wav(self):  # Added method to save audio to a WAV file
-        with wave.open(self.WAVE_OUTPUT_FILENAME, 'wb') as wf:
+        self.WAVE_OUTPUT_FILENAME_i+=1
+        if self.WAVE_OUTPUT_FILENAME_i == 21:
+            self.WAVE_OUTPUT_FILENAME_i = 1
+
+        with wave.open(self.WAVE_OUTPUT_FILENAME+str(self.WAVE_OUTPUT_FILENAME_i)+".wav", 'wb') as wf:
             wf.setnchannels(self.CHANNELS)
             wf.setsampwidth(2)
             wf.setframerate(self.RATE)
             wf.writeframes(b''.join(self.recording_frames))
 
-        rospy.loginfo(f"Saved recording as {self.WAVE_OUTPUT_FILENAME}")
+        rospy.loginfo(f"Saved recording as {self.WAVE_OUTPUT_FILENAME+'.wav'}")
         self.recording_frames = []
 
 
@@ -227,7 +299,10 @@ class NiclaRosPublisher:
 
         self.nicla_receiver_server.serve()
 
-
+    # Function to convert a pair of bytes to a 16-bit unsigned integer
+    def bytes_to_uint16(self, byte1, byte2):
+        return (byte1 << 8) | byte2
+    
     def run(self):
 
         if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
@@ -253,27 +328,120 @@ class NiclaRosPublisher:
 
                 ### PUBLISH IMG RAW
                 if self.enable_camera_raw:
-                    # Convert the byte array to a numpy array
-                    nparr = np.frombuffer(image[1], np.uint8)
+                    pass
+                    # # Convert the byte array to a numpy array
+                    # #nparr = np.frombuffer(image[1], np.uint8)
 
-                    # Decode the compressed image
-                    img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
+                    # # Decode the compressed image
+                    # #img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
 
-                    self.image_raw_msg.header.stamp = rospy.Time.from_sec(image[0])
-                    self.image_raw_msg.height = img_raw.shape[0]
-                    self.image_raw_msg.width = img_raw.shape[1]
-                    self.image_raw_msg.encoding = "bgr8"  # Assuming OpenCV returns BGR format
-                    self.image_raw_msg.is_bigendian = 0  # Not big endian
-                    self.image_raw_msg.step = img_raw.shape[1] * 3  # Width * number of channels
+ 
+                    # print(type(image[1]))
+                    # # with open("output.bin", "wb") as binary_file:
+   
+                    # #     # Write bytes to file
+                    # #     binary_file.write(image[1])
+                    # #     binary_file.close()
 
-                    # Convert the OpenCV image to ROS Image format using cv_bridge
-                    bridge = CvBridge()
-                    try:
-                        self.image_raw_msg.data = bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
-                    except CvBridgeError as e:
-                        print(e)                
+                    # # with open("output.bin", "rb") as f:
+   
+                    # #     # Read bytes to file
+                    # #     one = f.read()
+                    # #     length = len(one)
+ 
+                    # #     one = struct.unpack(f'{length}B', one)
 
-                    self.image_raw_pub.publish(self.image_raw_msg)
+                    # #     print(type(one))
+
+                    # print(image[1])
+
+                    # print("ciao")
+
+                    # one = image[1]
+                    # length =  len(one)
+
+                    # print("ciao: ", len(one))
+                    # print("ciao: ", len(one))
+                    # print("ciao: ", len(one))
+
+                    # for i in range(length-1, 0, -2):
+                    #     print("ok")
+
+                    # for i in range(len(one)-1, 0, -2):
+                    #     print("hello", flush=True)
+                    #     print(one[i])
+                    # #################################################################àà
+
+
+                    # # Create a list of 16-bit unsigned integers
+                    # # uint16_list = [bytes_to_uint16(one[i], one[i+1]) for i in range(0, len(one), 2)]
+                    # uint16_list = [self.bytes_to_uint16(one[i-1], one[i]) for i in range(len(one)-1, 0, -2)]
+ 
+
+
+                    # print(len(uint16_list))
+                    # # print(uint16_list)                  
+                    
+                    # xdim = 320
+                    # ydim = 240
+
+                    # img_raw = np.zeros((ydim, xdim, 3), dtype=np.uint8)
+
+                    # # ##################################################################################
+
+                    # # ## OPTION 1: 
+
+                    # # i = 0
+
+                    # # for y in range(ydim):
+                    # #     for x in range(xdim):
+                    # #         px = uint16_list[i]
+                    # #         i += 1
+                    # #         red = (px & 0xF800) >> 8
+                    # #         green = (px & 0x07E0) >> 3
+                    # #         blue = (px & 0x001F) << 3
+                    # #         im[y, x] = [blue, green, red]  # OpenCV uses BGR format
+
+                    # # ##################################################################################
+
+                    # # OPTION 2: 
+
+                    # px_array = np.array(uint16_list, dtype=np.uint16).reshape(ydim, xdim)
+
+                    # # Extract the red, green, and blue components using bitwise operations
+                    # red = ((px_array & 0xF800) >> 8).astype(np.uint8)
+                    # green = ((px_array & 0x07E0) >> 3).astype(np.uint8)
+                    # blue = ((px_array & 0x001F) << 3).astype(np.uint8)
+
+                    # # Stack the channels into a 3D array
+                    # img_raw = np.dstack((blue, green, red))
+
+
+                    # ##################################################################
+
+
+                    # print("ciao")
+
+                    # self.image_raw_msg.header.stamp = rospy.Time.now() #from_sec(image[0])
+                    # self.image_raw_msg.height = img_raw.shape[0]
+                    # self.image_raw_msg.width = img_raw.shape[1]
+                    # self.image_raw_msg.encoding = "bgr8"  # Assuming OpenCV returns BGR format
+                    # self.image_raw_msg.is_bigendian = 0  # Not big endian
+                    # self.image_raw_msg.step = img_raw.shape[1] * 3  # Width * number of channels
+
+                    # print("ciao")
+
+                    # # Convert the OpenCV image to ROS Image format using cv_bridge
+                    # bridge = CvBridge()
+                    # try:
+                    #     self.image_raw_msg.data = bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
+                    # except CvBridgeError as e:
+                    #     print(e)          
+
+                    # print("ciao")      
+
+                    # self.image_raw_pub.publish(self.image_raw_msg)
+                    # print("ciao")
 
         ### AUDIO DATA
         if self.enable_audio or self.enable_audio_stamped :
