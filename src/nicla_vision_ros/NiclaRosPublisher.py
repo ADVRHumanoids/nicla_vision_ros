@@ -25,7 +25,7 @@ class SpeechRecognizer:
         
         self.FORMAT = 2
         self.CHANNELS = 1
-        self.RATE = 8000
+        self.RATE = 16000
         self.CHUNK = 512
         self.RECORD_SECONDS = 5  # Duration to record audio in seconds
         self.WAVE_OUTPUT_FILENAME = "/home/dgasperini/output.wav"
