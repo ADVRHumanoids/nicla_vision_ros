@@ -35,7 +35,7 @@ class SpeechRecognizer:
         
         self.FORMAT = 2
         self.CHANNELS = 1
-        self.RATE = 8000
+        self.RATE = 16000
         self.CHUNK = 512
         self.RECORD_SECONDS = 3  # Duration to record audio in seconds
         self.WAVE_OUTPUT_FILENAME = "/home/dgasperini/output"
@@ -99,7 +99,7 @@ class SpeechRecognizer:
 
             energy = audioop.rms(data, 2)
 
-            print("ENERGY: ", energy)
+            # print("ENERGY: ", energy)
 
             if energy > 5000:
                 self.start = True 
@@ -328,120 +328,29 @@ class NiclaRosPublisher:
 
                 ### PUBLISH IMG RAW
                 if self.enable_camera_raw:
-                    pass
                     # # Convert the byte array to a numpy array
-                    # #nparr = np.frombuffer(image[1], np.uint8)
+                    # nparr = np.frombuffer(image[1], np.uint8)
 
                     # # Decode the compressed image
-                    # #img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
+                    # img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
 
- 
-                    # print(type(image[1]))
-                    # # with open("output.bin", "wb") as binary_file:
-   
-                    # #     # Write bytes to file
-                    # #     binary_file.write(image[1])
-                    # #     binary_file.close()
+                    img_raw = image[1]
 
-                    # # with open("output.bin", "rb") as f:
-   
-                    # #     # Read bytes to file
-                    # #     one = f.read()
-                    # #     length = len(one)
- 
-                    # #     one = struct.unpack(f'{length}B', one)
+                    self.image_raw_msg.header.stamp = rospy.Time.from_sec(image[0])
+                    self.image_raw_msg.height = img_raw.shape[0]
+                    self.image_raw_msg.width = img_raw.shape[1]
+                    self.image_raw_msg.encoding = "bgr8"  # Assuming OpenCV returns BGR format
+                    self.image_raw_msg.is_bigendian = 0  # Not big endian
+                    self.image_raw_msg.step = img_raw.shape[1] * 3  # Width * number of channels
 
-                    # #     print(type(one))
+                    # Convert the OpenCV image to ROS Image format using cv_bridge
+                    bridge = CvBridge()
+                    try:
+                        self.image_raw_msg.data = bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
+                    except CvBridgeError as e:
+                        print(e)                
 
-                    # print(image[1])
-
-                    # print("ciao")
-
-                    # one = image[1]
-                    # length =  len(one)
-
-                    # print("ciao: ", len(one))
-                    # print("ciao: ", len(one))
-                    # print("ciao: ", len(one))
-
-                    # for i in range(length-1, 0, -2):
-                    #     print("ok")
-
-                    # for i in range(len(one)-1, 0, -2):
-                    #     print("hello", flush=True)
-                    #     print(one[i])
-                    # #################################################################àà
-
-
-                    # # Create a list of 16-bit unsigned integers
-                    # # uint16_list = [bytes_to_uint16(one[i], one[i+1]) for i in range(0, len(one), 2)]
-                    # uint16_list = [self.bytes_to_uint16(one[i-1], one[i]) for i in range(len(one)-1, 0, -2)]
- 
-
-
-                    # print(len(uint16_list))
-                    # # print(uint16_list)                  
-                    
-                    # xdim = 320
-                    # ydim = 240
-
-                    # img_raw = np.zeros((ydim, xdim, 3), dtype=np.uint8)
-
-                    # # ##################################################################################
-
-                    # # ## OPTION 1: 
-
-                    # # i = 0
-
-                    # # for y in range(ydim):
-                    # #     for x in range(xdim):
-                    # #         px = uint16_list[i]
-                    # #         i += 1
-                    # #         red = (px & 0xF800) >> 8
-                    # #         green = (px & 0x07E0) >> 3
-                    # #         blue = (px & 0x001F) << 3
-                    # #         im[y, x] = [blue, green, red]  # OpenCV uses BGR format
-
-                    # # ##################################################################################
-
-                    # # OPTION 2: 
-
-                    # px_array = np.array(uint16_list, dtype=np.uint16).reshape(ydim, xdim)
-
-                    # # Extract the red, green, and blue components using bitwise operations
-                    # red = ((px_array & 0xF800) >> 8).astype(np.uint8)
-                    # green = ((px_array & 0x07E0) >> 3).astype(np.uint8)
-                    # blue = ((px_array & 0x001F) << 3).astype(np.uint8)
-
-                    # # Stack the channels into a 3D array
-                    # img_raw = np.dstack((blue, green, red))
-
-
-                    # ##################################################################
-
-
-                    # print("ciao")
-
-                    # self.image_raw_msg.header.stamp = rospy.Time.now() #from_sec(image[0])
-                    # self.image_raw_msg.height = img_raw.shape[0]
-                    # self.image_raw_msg.width = img_raw.shape[1]
-                    # self.image_raw_msg.encoding = "bgr8"  # Assuming OpenCV returns BGR format
-                    # self.image_raw_msg.is_bigendian = 0  # Not big endian
-                    # self.image_raw_msg.step = img_raw.shape[1] * 3  # Width * number of channels
-
-                    # print("ciao")
-
-                    # # Convert the OpenCV image to ROS Image format using cv_bridge
-                    # bridge = CvBridge()
-                    # try:
-                    #     self.image_raw_msg.data = bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
-                    # except CvBridgeError as e:
-                    #     print(e)          
-
-                    # print("ciao")      
-
-                    # self.image_raw_pub.publish(self.image_raw_msg)
-                    # print("ciao")
+                    self.image_raw_pub.publish(self.image_raw_msg)
 
         ### AUDIO DATA
         if self.enable_audio or self.enable_audio_stamped :

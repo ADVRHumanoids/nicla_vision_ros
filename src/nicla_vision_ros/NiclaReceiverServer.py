@@ -22,12 +22,14 @@ class UDPHandler(socketserver.BaseRequestHandler):
         packet = self.request[0]
         #socket = self.request[1]
          
-        size_packet = int.from_bytes(packet[:4], "big")   
+        size_packet = int.from_bytes(packet[:4], "little")  
 
-        if size_packet == len(packet[4:]):
+        data_type = packet[8]      
+
+        if size_packet == len(packet[4:]): # or data_type == IMAGE_TYPE:
  
             timestamp = time.time() #int.from_bytes(packet[4:8], "big")
-            data_type = packet[8]
+            
             data = packet[9:]
             
             if data_type == RANGE_TYPE:
@@ -38,7 +40,85 @@ class UDPHandler(socketserver.BaseRequestHandler):
 
             elif data_type == IMAGE_TYPE:
                 if self.server.enable_image:
-                    self.server.image_buffer.put_nowait((timestamp, data))
+
+                    ##### OPTION 1 
+
+                    # half_img_bin_0 = packet[4:size_packet+4]                    
+
+                    # tmp_packet = packet[size_packet+4:]
+                    # size_packet_1 = int.from_bytes(tmp_packet[:4], "little") 
+                    # data_type_1 = int.from_bytes(tmp_packet[8:9], "little") 
+                    # half_img_bin_1 = tmp_packet[4:size_packet_1+4]  # Note: size_packet_1+4 == len(tmp_packet)
+
+                    # # print("Size packet 0: ", size_packet)
+                    # # print("Size packet 1: ", size_packet_1)
+                    # # print("Data type 0: ", data_type)
+                    # # print("Data type 1: ", data_type_1)
+                    # # print("Len packet: ", len(packet))
+                    # # print("sum size: ", size_packet+size_packet_1)
+                    # # print("Len tmp_packet: ", len(tmp_packet))
+                    # # print("max idx tmp_packet: ", size_packet_1+4)
+
+                    # half_img_bin_0 = np.asarray(bytearray(half_img_bin_0[5:]), dtype="uint8")
+                    # half_img_bin_1 = np.asarray(bytearray(half_img_bin_1[5:]), dtype="uint8")
+
+                    # half_img_dec_0 = cv2.imdecode(half_img_bin_0, cv2.IMREAD_UNCHANGED) 
+                    # half_img_dec_0 = np.dstack((half_img_dec_0[:,:,2], half_img_dec_0[:,:,1], half_img_dec_0[:,:,0]))
+
+                    # half_img_dec_1 = cv2.imdecode(half_img_bin_1, cv2.IMREAD_UNCHANGED) 
+                    # half_img_dec_1 = np.dstack((half_img_dec_1[:,:,2], half_img_dec_1[:,:,1], half_img_dec_1[:,:,0]))
+ 
+                    # # Stack the images vertically
+                    # combined_image = np.vstack((half_img_dec_1, half_img_dec_0))
+
+                    # _, buffer = cv2.imencode('.png', combined_image)
+                    # binary_buffer = buffer.tobytes()
+                    # self.server.image_buffer.put_nowait((timestamp, binary_buffer))
+
+                    #####
+
+                    ##### OPTION 2
+
+                    timestamp_img = int.from_bytes(packet[4:8], "little")
+                    idx_img = packet[9] #int.from_bytes(packet[9:13], "little")
+
+                    # print("TIMESTAMP: ", timestamp_img)                    
+                    # print("SIZE: ", size_packet)
+                    # print("IDX IMG: ", idx_img)
+
+                    if not idx_img:
+                        self.server.last_timestamp_img = timestamp_img
+                        self.server.last_idx_img = idx_img
+                        self.server.last_half_img = packet[10:]
+                    
+                    else:
+                        if timestamp_img == self.server.last_timestamp_img:
+
+                            half_img_bin_0 = self.server.last_half_img                  
+                             
+                            half_img_bin_1 = packet[10:]    
+
+                            half_img_bin_0 = np.asarray(bytearray(half_img_bin_0), dtype="uint8")
+                            half_img_bin_1 = np.asarray(bytearray(half_img_bin_1), dtype="uint8")
+
+                            half_img_dec_0 = cv2.imdecode(half_img_bin_0, cv2.IMREAD_UNCHANGED) 
+                            half_img_dec_0 = np.dstack((half_img_dec_0[:,:,2], half_img_dec_0[:,:,1], half_img_dec_0[:,:,0]))
+
+                            half_img_dec_1 = cv2.imdecode(half_img_bin_1, cv2.IMREAD_UNCHANGED) 
+                            half_img_dec_1 = np.dstack((half_img_dec_1[:,:,2], half_img_dec_1[:,:,1], half_img_dec_1[:,:,0]))
+        
+                            # Stack the images vertically
+                            combined_image = np.vstack((half_img_dec_1, half_img_dec_0))
+
+                            # _, buffer = cv2.imencode('.png', combined_image)
+                            # binary_buffer = buffer.tobytes()
+                            # self.server.image_buffer.put_nowait((timestamp, binary_buffer))
+                            self.server.image_buffer.put_nowait((timestamp, combined_image))
+
+
+                     
+ 
+                    # self.server.image_buffer.put_nowait((timestamp, data))
                 else:
                     pass
 
@@ -78,6 +158,10 @@ class NiclaReceiverUDP(socketserver.UDPServer):
             self.imu_buffer = queue.Queue(maxsize=10)
 
         self.server_thread = None
+
+        self.last_timestamp_img = None
+        self.last_idx_img = None 
+        self.last_half_img = None
 
     def serve(self):
         self.server_thread = Thread(target=self.serve_forever)
@@ -223,35 +307,35 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                             else:
                                 pass
 
-                        # elif data_type == IMAGE_TYPE:
-                        #     if self.enable_image:
-
-                        #         half_img_bin = np.asarray(bytearray(data), dtype="uint8")
-                        #         half_img_dec = cv2.imdecode(half_img_bin, cv2.IMREAD_UNCHANGED) 
-                        #         half_img_dec = np.dstack((half_img_dec[:,:,2], half_img_dec[:,:,1], half_img_dec[:,:,0]))
-
-                                 
-                        #         if first_half:
-                        #             first_half = False
-                        #             half_img = half_img_dec
-                                     
-                        #         else:
-                        #             first_half = True
-                        #             # Stack the images vertically
-                        #             combined_image = np.vstack((half_img_dec, half_img))
-
-                        #             _, buffer = cv2.imencode('.png', combined_image)
-                        #             binary_buffer = buffer.tobytes()
-                        #             self.image_buffer.put_nowait((timestamp, binary_buffer))
-                        #             half_img = None
-                        #     else:
-                        #         pass
-                        
                         elif data_type == IMAGE_TYPE:
                             if self.enable_image:
-                                self.image_buffer.put_nowait((timestamp, data))
+
+                                half_img_bin = np.asarray(bytearray(data), dtype="uint8")
+                                half_img_dec = cv2.imdecode(half_img_bin, cv2.IMREAD_UNCHANGED) 
+                                half_img_dec = np.dstack((half_img_dec[:,:,2], half_img_dec[:,:,1], half_img_dec[:,:,0]))
+
+                                 
+                                if first_half:
+                                    first_half = False
+                                    half_img = half_img_dec
+                                     
+                                else:
+                                    first_half = True
+                                    # Stack the images vertically
+                                    combined_image = np.vstack((half_img_dec, half_img))
+
+                                    _, buffer = cv2.imencode('.png', combined_image)
+                                    binary_buffer = buffer.tobytes()
+                                    self.image_buffer.put_nowait((timestamp, binary_buffer))
+                                    half_img = None
                             else:
                                 pass
+                        
+                        # elif data_type == IMAGE_TYPE:
+                        #     if self.enable_image:
+                        #         self.image_buffer.put_nowait((timestamp, data))
+                        #     else:
+                        #         pass
 
                         elif data_type == AUDIO_TYPE:
                             if self.enable_audio:
