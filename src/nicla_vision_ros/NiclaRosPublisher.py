@@ -48,18 +48,18 @@ class SpeechRecognizer:
 
         self.command_pub = rospy.Publisher('/verbal_command', String, queue_size=10)
 
-        # self.model = Model("/home/dgasperini/ros_ws/src/relax_multi_modal/python/models/en")
-        # self.recognizer = KaldiRecognizer(self.model, 16000) # NOTE 16kHz sampling
-        # self.recognizer.SetGrammar('["open", "bottle", "cup", "[unk]"]')
+        self.model = Model("/home/dgasperini/ros_ws/src/relax_multi_modal/python/models/en")
+        self.recognizer = KaldiRecognizer(self.model, 16000) # NOTE 16kHz sampling
+        self.recognizer.SetGrammar('["open", "bottle", "cup", "[unk]"]')
 
         # self.model= whisper.load_model("base")
         # self.r = sr.Recognizer()
 
-        self.client = Wit("JE3DVMKWDKGRRUALGY2BROTGEO4W7EFW")
-        self.start = False
+        # self.client = Wit("JE3DVMKWDKGRRUALGY2BROTGEO4W7EFW")
+        # self.start = False
 
-        self.recognizing_thread = Thread(target=self.recognize_audio) 
-        self.recognizing_thread.start()
+        # self.recognizing_thread = Thread(target=self.recognize_audio) 
+        # self.recognizing_thread.start()
         
         rospy.loginfo("Speech recognizer is ready")
 
@@ -308,7 +308,7 @@ class NiclaRosPublisher:
         if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
 
             self.range_msg.header.stamp = rospy.Time.from_sec(range[0])
-            self.range_msg.range = int.from_bytes(range[1], "big")/1000
+            self.range_msg.range = int.from_bytes(range[1], "little")/1000
             self.range_pub.publish(self.range_msg)
 
         ### PUBLISH IMAGE
@@ -358,7 +358,7 @@ class NiclaRosPublisher:
             self.audio_info_pub.publish(self.audio_info_msg)
 
             if (audio_data := self.nicla_receiver_server.get_audio()) is not None:
-                self.speech_recognizer.process_audio(audio_data[1])
+                self.speech_recognizer.process_audio_luca(audio_data[1])
 
                 if self.enable_audio:
                     self.audio_msg.data = audio_data[1]
