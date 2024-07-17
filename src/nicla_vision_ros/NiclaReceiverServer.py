@@ -41,44 +41,6 @@ class UDPHandler(socketserver.BaseRequestHandler):
             elif data_type == IMAGE_TYPE:
                 if self.server.enable_image:
 
-                    ##### OPTION 1 
-
-                    # half_img_bin_0 = packet[4:size_packet+4]                    
-
-                    # tmp_packet = packet[size_packet+4:]
-                    # size_packet_1 = int.from_bytes(tmp_packet[:4], "little") 
-                    # data_type_1 = int.from_bytes(tmp_packet[8:9], "little") 
-                    # half_img_bin_1 = tmp_packet[4:size_packet_1+4]  # Note: size_packet_1+4 == len(tmp_packet)
-
-                    # # print("Size packet 0: ", size_packet)
-                    # # print("Size packet 1: ", size_packet_1)
-                    # # print("Data type 0: ", data_type)
-                    # # print("Data type 1: ", data_type_1)
-                    # # print("Len packet: ", len(packet))
-                    # # print("sum size: ", size_packet+size_packet_1)
-                    # # print("Len tmp_packet: ", len(tmp_packet))
-                    # # print("max idx tmp_packet: ", size_packet_1+4)
-
-                    # half_img_bin_0 = np.asarray(bytearray(half_img_bin_0[5:]), dtype="uint8")
-                    # half_img_bin_1 = np.asarray(bytearray(half_img_bin_1[5:]), dtype="uint8")
-
-                    # half_img_dec_0 = cv2.imdecode(half_img_bin_0, cv2.IMREAD_UNCHANGED) 
-                    # half_img_dec_0 = np.dstack((half_img_dec_0[:,:,2], half_img_dec_0[:,:,1], half_img_dec_0[:,:,0]))
-
-                    # half_img_dec_1 = cv2.imdecode(half_img_bin_1, cv2.IMREAD_UNCHANGED) 
-                    # half_img_dec_1 = np.dstack((half_img_dec_1[:,:,2], half_img_dec_1[:,:,1], half_img_dec_1[:,:,0]))
- 
-                    # # Stack the images vertically
-                    # combined_image = np.vstack((half_img_dec_1, half_img_dec_0))
-
-                    # _, buffer = cv2.imencode('.png', combined_image)
-                    # binary_buffer = buffer.tobytes()
-                    # self.server.image_buffer.put_nowait((timestamp, binary_buffer))
-
-                    #####
-
-                    ##### OPTION 2
-
                     timestamp_img = int.from_bytes(packet[4:8], "little")
                     idx_img = packet[9] #int.from_bytes(packet[9:13], "little")
 
@@ -110,15 +72,8 @@ class UDPHandler(socketserver.BaseRequestHandler):
                             # Stack the images vertically
                             combined_image = np.vstack((half_img_dec_1, half_img_dec_0))
 
-                            # _, buffer = cv2.imencode('.png', combined_image)
-                            # binary_buffer = buffer.tobytes()
-                            # self.server.image_buffer.put_nowait((timestamp, binary_buffer))
                             self.server.image_buffer.put_nowait((timestamp, combined_image))
 
-
-                     
- 
-                    # self.server.image_buffer.put_nowait((timestamp, data))
                 else:
                     pass
 
@@ -329,13 +284,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                                     self.image_buffer.put_nowait((timestamp, binary_buffer))
                                     half_img = None
                             else:
-                                pass
-                        
-                        # elif data_type == IMAGE_TYPE:
-                        #     if self.enable_image:
-                        #         self.image_buffer.put_nowait((timestamp, data))
-                        #     else:
-                        #         pass
+                                pass                       
 
                         elif data_type == AUDIO_TYPE:
                             if self.enable_audio:
@@ -394,14 +343,4 @@ class NiclaReceiverTCP(socketserver.TCPServer):
             return self.imu_buffer.get_nowait()
         else: 
             return None
-
-
-
-
-        
-
-
-
-
-
 

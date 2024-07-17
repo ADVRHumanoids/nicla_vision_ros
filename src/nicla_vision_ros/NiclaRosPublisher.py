@@ -134,13 +134,9 @@ class NiclaRosPublisher:
                 self.audio_recognition_wave_output_filename)
             self.speech_recognizer_pub = rospy.Publisher(nicla_name + '/audio_recognized', String, queue_size=10)
             
-
         self.nicla_receiver_server.serve()
 
-    # Function to convert a pair of bytes to a 16-bit unsigned integer
-    def bytes_to_uint16(self, byte1, byte2):
-        return (byte1 << 8) | byte2
-    
+
     def run(self):
 
         if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
@@ -166,11 +162,6 @@ class NiclaRosPublisher:
 
                 ### PUBLISH IMG RAW
                 if self.enable_camera_raw:
-                    # # Convert the byte array to a numpy array
-                    # nparr = np.frombuffer(image[1], np.uint8)
-
-                    # # Decode the compressed image
-                    # img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
 
                     img_raw = image[1]
 
