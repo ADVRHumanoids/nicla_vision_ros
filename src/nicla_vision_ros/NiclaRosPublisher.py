@@ -5,188 +5,11 @@ import rospy
 from sensor_msgs.msg import CompressedImage, Image, CameraInfo
 from sensor_msgs.msg import Range
 from sensor_msgs.msg import Imu
+from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData, AudioDataStamped, AudioInfo
 from cv_bridge import CvBridge, CvBridgeError
-import cv2
-import numpy as np
 
 from nicla_vision_ros import NiclaReceiverUDP, NiclaReceiverTCP
-
-
-from std_msgs.msg import String
-import sounddevice as sd 
-from vosk import Model, KaldiRecognizer
-import json 
-import wave
-
-import whisper  
-import torch 
-import speech_recognition as sr
-from os import path
-from wit import Wit
-
-from threading import Thread
-import audioop
-
-
-
-class SpeechRecognizer:
-    def __init__(self):
-        
-        self.FORMAT = 2
-        self.CHANNELS = 1
-        self.RATE = 16000
-        self.CHUNK = 512
-        self.RECORD_SECONDS = 3  # Duration to record audio in seconds
-        self.WAVE_OUTPUT_FILENAME = "/home/dgasperini/output"
-        self.WAVE_OUTPUT_FILENAME_i = 0
-         
-
-        self.audio_buffer = np.array([], dtype='int16')
-        self.recording_frames = []  # Added for storing audio frames
-        self.numbers = []
-
-        self.command_pub = rospy.Publisher('/verbal_command', String, queue_size=10)
-
-        self.model = Model("/home/dgasperini/ros_ws/src/relax_multi_modal/python/models/en")
-        self.recognizer = KaldiRecognizer(self.model, 16000) # NOTE 16kHz sampling
-        self.recognizer.SetGrammar('["open", "bottle", "cup", "[unk]"]')
-
-        # self.model= whisper.load_model("base")
-        # self.r = sr.Recognizer()
-
-        # self.client = Wit("JE3DVMKWDKGRRUALGY2BROTGEO4W7EFW")
-        # self.start = False
-
-        # self.recognizing_thread = Thread(target=self.recognize_audio) 
-        # self.recognizing_thread.start()
-        
-        rospy.loginfo("Speech recognizer is ready")
-
-
-    def recognize_audio(self):
-        while not rospy.is_shutdown():
-            try:      
-
-                resp = None  
-
-                with open(self.WAVE_OUTPUT_FILENAME+str(self.WAVE_OUTPUT_FILENAME_i)+".wav", 'rb') as f:
-                    resp = self.client.speech(f, {'Content-Type': 'audio/wav', 'Transfer-encoding': 'chunked'})
-                
-                print(str(resp['text']))
-
-                # if result['text']:
-                #         #rospy.loginfo(f"Recognized: {result['text']}")
-                #         self.command_pub.publish(result['text'])
-
-            except Exception as e:
-                pass
-
-
-    def process_audio(self, data):
-        tmp = np.frombuffer(data, dtype="int16") #512 -> 1 sec     
-
-        self.audio_buffer = np.concatenate((self.audio_buffer, tmp))
-    
-        self.recording_frames.append(data)
-
-        if not self.start:
-
-            if len(self.audio_buffer) >= 512*10:
-                self.audio_buffer = self.audio_buffer[512*7:]
-
-                self.recording_frames = self.recording_frames[7:]
-
-            energy = audioop.rms(data, 2)
-
-            # print("ENERGY: ", energy)
-
-            if energy > 5000:
-                self.start = True 
-
-        #print(len(self.recording_frames))
-        #print(int(self.RATE / self.CHUNK * self.RECORD_SECONDS))
-        if self.start and len(self.recording_frames) >= int(self.RATE / self.CHUNK * self.RECORD_SECONDS):
-            self.save_audio_to_wav()
-            self.start = False
-            self.audio_buffer = np.array([], dtype='int16')
-
-    def process_audio_luca(self, data):
-        tmp = np.frombuffer(data, dtype="int16")
-        # new = tmp.tolist()
-        # self.numbers.extend(new)
-
-        # if len(self.numbers)>= 8000*5:
-        #     # pcm_data = np.cumsum(self.numbers, dtype=np.int32)
-        #     # pcm_data = np.array(pcm_data, dtype=np.int16) >> 16
-
-        #     self.numbers = np.array(self.numbers, dtype="int16")
-
-        #     with wave.open("/home/dgasperini/output.wav", 'w') as wf:
-        #         wf.setnchannels(1)  # Mono
-        #         wf.setsampwidth(2)  # 2 bytes (16 bits)
-        #         wf.setframerate(8000)
-        #         wf.writeframes(self.numbers.tobytes())
-
-        #         print("Saved output.wav")
-
-        #         self.numbers = []
-
-        
-        self.audio_buffer = np.concatenate((self.audio_buffer, tmp))
-        self.recording_frames.append(data)
-
-        if len(self.audio_buffer) > self.RATE*2:  # process in blocks of 1 second
-            chunk = self.audio_buffer[:self.RATE*2]
-            self.audio_buffer = self.audio_buffer[self.RATE*2:]
-
-            #self.stream.write(self.audio_buffer)
-            
-            if self.recognizer.AcceptWaveform(chunk.tobytes()):
-                result = json.loads(self.recognizer.Result())
-                if result['text']:
-                    #rospy.loginfo(f"Recognized: {result['text']}")
-                    self.command_pub.publish(result['text'])
-
-        #print(len(self.recording_frames))
-        #print(int(self.RATE / self.CHUNK * self.RECORD_SECONDS))
-        if len(self.recording_frames) >= int(self.RATE / self.CHUNK * self.RECORD_SECONDS):
-            self.save_audio_to_wav()
-
-    # def process_audio_damiano(self):
-
-    #     if len(self.recording_frames_damiano)>= 16000*5:
-
-    #         # pcm_data = np.cumsum(self.numbers, dtype=np.int32)
-    #         # pcm_data = np.array(pcm_data, dtype=np.int16) >> 16
-
-    #         daminao_np = np.array(self.recording_frames_damiano, dtype="int16")
-
-    #         with wave.open("audio_dam.wav", 'w') as wf:
-    #             wf.setnchannels(1)  # Mono
-    #             wf.setsampwidth(2)  # 2 bytes (16 bits)
-    #             wf.setframerate(16000)
-    #             wf.writeframes(daminao_np.tobytes())
-    #             rospy.loginfo(f"Saved recording aaaaaaaaaa")
-
-    #         self.recording_frames_damiano = []
-
-
-
-    def save_audio_to_wav(self):  # Added method to save audio to a WAV file
-        self.WAVE_OUTPUT_FILENAME_i+=1
-        if self.WAVE_OUTPUT_FILENAME_i == 21:
-            self.WAVE_OUTPUT_FILENAME_i = 1
-
-        with wave.open(self.WAVE_OUTPUT_FILENAME+str(self.WAVE_OUTPUT_FILENAME_i)+".wav", 'wb') as wf:
-            wf.setnchannels(self.CHANNELS)
-            wf.setsampwidth(2)
-            wf.setframerate(self.RATE)
-            wf.writeframes(b''.join(self.recording_frames))
-
-        rospy.loginfo(f"Saved recording as {self.WAVE_OUTPUT_FILENAME+'.wav'}")
-        self.recording_frames = []
-
 
 
 class NiclaRosPublisher:
@@ -206,6 +29,10 @@ class NiclaRosPublisher:
         self.enable_camera_compressed = rospy.get_param("~enable_camera_compressed", True)
         self.enable_audio = rospy.get_param("~enable_audio", True)
         self.enable_audio_stamped = rospy.get_param("~enable_audio_stamped", False)
+        self.enable_audio_recognition_vosk = rospy.get_param("~enable_audio_recognition_vosk", False)
+        self.audio_recognition_model_path = rospy.get_param("~audio_recognition_model_path", "")
+        self.audio_recognition_grammar = rospy.get_param("~audio_recognition_grammar", "")
+        self.audio_recognition_wave_output_filename = rospy.get_param("~audio_recognition_wave_output_filename", "")
         self.enable_imu = rospy.get_param("~enable_imu", True)
 
         if self.enable_range:
@@ -267,7 +94,6 @@ class NiclaRosPublisher:
             self.audio_info_msg.bitrate = 0
             self.audio_info_msg.coding_format = "raw"
             self.audio_info_pub = rospy.Publisher(audio_info_topic, AudioInfo, queue_size=1)
-            self.speech_recognizer = SpeechRecognizer()
 
         if self.enable_imu:
             imu_topic = nicla_name + "/imu"
@@ -295,6 +121,18 @@ class NiclaRosPublisher:
         else:
             rospy.logerr("Connection type ", connection_type, " not known")
             raise Exception("Connection type not known")
+        
+        if self.enable_audio_recognition_vosk:
+            if not self.audio_recognition_model_path:
+                rospy.logerr("Path for VOSK recognizer model is an empty string! Please provide 'audio_recognition_model_path' arg")
+                exit()
+
+            from nicla_vision_ros import SpeechRecognizer
+            self.speech_recognizer = SpeechRecognizer.SpeechRecognizer(
+                self.audio_recognition_model_path, 
+                self.audio_recognition_grammar, 
+                self.audio_recognition_wave_output_filename)
+            self.speech_recognizer_pub = rospy.Publisher(nicla_name + '/audio_recognized', String, queue_size=10)
             
 
         self.nicla_receiver_server.serve()
@@ -353,12 +191,12 @@ class NiclaRosPublisher:
                     self.image_raw_pub.publish(self.image_raw_msg)
 
         ### AUDIO DATA
-        if self.enable_audio or self.enable_audio_stamped :
-
+        if self.enable_audio or self.enable_audio_stamped:
             self.audio_info_pub.publish(self.audio_info_msg)
 
+        if self.enable_audio or self.enable_audio_stamped or self.enable_audio_recognition_vosk:
+
             if (audio_data := self.nicla_receiver_server.get_audio()) is not None:
-                self.speech_recognizer.process_audio_luca(audio_data[1])
 
                 if self.enable_audio:
                     self.audio_msg.data = audio_data[1]
@@ -368,6 +206,11 @@ class NiclaRosPublisher:
                     self.audio_stamped_msg.header.stamp = rospy.Time.from_sec(audio_data[0])
                     self.audio_stamped_msg.audio.data = audio_data[1]
                     self.audio_stamped_pub.publish(self.audio_stamped_msg)
+
+                if self.enable_audio_recognition_vosk:
+                    audio_recognized = self.speech_recognizer.process_audio(audio_data[1])
+                    if audio_recognized: #if not empty
+                        self.speech_recognizer_pub.publish(audio_recognized)
 
         ### IMU DATA
         if self.enable_imu and ((imu := self.nicla_receiver_server.get_imu()) is not None):
