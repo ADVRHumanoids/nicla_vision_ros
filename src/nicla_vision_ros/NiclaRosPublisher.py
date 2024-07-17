@@ -32,6 +32,7 @@ class NiclaRosPublisher:
         self.enable_audio_recognition_vosk = rospy.get_param("~enable_audio_recognition_vosk", False)
         self.audio_recognition_model_path = rospy.get_param("~audio_recognition_model_path", "")
         self.audio_recognition_grammar = rospy.get_param("~audio_recognition_grammar", "")
+        self.audio_recognition_listen_seconds = rospy.get_param("~audio_recognition_listen_seconds", 2)
         self.audio_recognition_wave_output_filename = rospy.get_param("~audio_recognition_wave_output_filename", "")
         self.enable_imu = rospy.get_param("~enable_imu", True)
 
@@ -107,10 +108,10 @@ class NiclaRosPublisher:
 
         if connection_type == "udp":
             self.nicla_receiver_server = NiclaReceiverUDP(ip, port, 
-                                                                        enable_range=self.enable_range, 
-                                                                        enable_image=self.enable_camera_raw or self.enable_camera_compressed,
-                                                                        enable_audio=self.enable_audio or self.enable_audio_stamped,
-                                                                        enable_imu=self.enable_imu)
+                                                            enable_range=self.enable_range, 
+                                                            enable_image=self.enable_camera_raw or self.enable_camera_compressed,
+                                                            enable_audio=self.enable_audio or self.enable_audio_stamped,
+                                                            enable_imu=self.enable_imu)
         elif connection_type == "tcp":
             self.nicla_receiver_server = NiclaReceiverTCP(ip, port, 
                                                             enable_range=self.enable_range, 
@@ -131,6 +132,7 @@ class NiclaRosPublisher:
             self.speech_recognizer = SpeechRecognizer.SpeechRecognizer(
                 self.audio_recognition_model_path, 
                 self.audio_recognition_grammar, 
+                self.audio_recognition_listen_seconds,
                 self.audio_recognition_wave_output_filename)
             self.speech_recognizer_pub = rospy.Publisher(nicla_name + '/audio_recognized', String, queue_size=10)
             
