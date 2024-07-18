@@ -299,16 +299,21 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                                 else: #second half
                                     # Stack the images vertically
                                     combined_image = np.vstack((half_img_dec, half_img))
-                                    self.image_buffer.put_nowait((timestamp, combined_image))
+                                    try:
+                                        self.image_buffer.put_nowait((timestamp, combined_image))
+                                    except queue.Full:
+                                        self.image_buffer.get_nowait()
+                                        self.image_buffer.put_nowait((timestamp, combined_image))
+                                        
                                     half_img = None
                             else:
-                                pass                       
+                                pass
 
                         elif data_type == AUDIO_TYPE:
                             if self.enable_audio:
                                 try:
                                     self.audio_buffer.put_nowait((timestamp, data))
-                                except:
+                                except queue.Full:
                                     self.audio_buffer.get_nowait()
                                     self.audio_buffer.put_nowait((timestamp, data))
 
