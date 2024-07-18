@@ -1,4 +1,5 @@
 *.vscode
 *.kdev
 *.kdev4
+*.egg-info
 __pycache__/

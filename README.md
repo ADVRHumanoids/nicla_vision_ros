@@ -22,6 +22,7 @@ Here a list of the available sensors with their respective ROS topics:
     - `/nicla/audio` 
     - `/nicla/audio_info`
     - `/nicla/audio_stamped`
+    - `/nicla/audio_recognized`
 - **Imu** streams on:
     - `/nicla/imu`
 
@@ -86,6 +87,16 @@ After having completed the setup steps in the [Nicla Vision Drivers repository](
 When you power on your Arduino Nicla Vision, it will automatically connect to the network and it will start streaming to your ROS-running machine.
 
 **Note:** Look at the LED of your board! The first seconds (about 15 sec) after having turned it on, the LED should be Blue. When the board is correctly connected and it is streaming, the LED will turn off. If you are having connection issues, the LED will be Blue again. If during execution you see a Green LED, it is for unforseen errors. If during execution you see a Red LED, it is for memory errors (usually picture quality too high).
+
+### Optional Audio Recognition with VOSK
+It is possible to run a speech recognition feature directly on this module, that will then publish the recognized words on the `/nicla/audio_recognized` topic. At the moment, [VOSK](https://alphacephei.com/vosk/) is utilized. Only Arduino version is supported.
+#### VOSK setup
+1. ```pip install vosk```
+2. Download a VOSK model https://alphacephei.com/vosk/models
+3. Check the `recognition` arguments in the ```nicla_receiver.launch``` file
+
+### Optional Micropython Version
+*TODO*
 
 # Video Demonstration
 
