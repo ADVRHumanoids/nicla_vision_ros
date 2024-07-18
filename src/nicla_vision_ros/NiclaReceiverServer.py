@@ -30,25 +30,43 @@ class UDPHandler(socketserver.BaseRequestHandler):
             
             if data_type == RANGE_TYPE:
                 if self.server.enable_range:
-                    self.server.range_buffer.put_nowait((timestamp, data))
+                    try:
+                        self.server.range_buffer.put_nowait((timestamp, data))
+                    except queue.Full:
+                        self.server.range_buffer.get()
+                        self.server.range_buffer.put_nowait((timestamp, data))
+
                 else:
                     pass
 
             elif data_type == IMAGE_TYPE:
                 if self.server.enable_image:
-                    self.server.image_buffer.put_nowait((timestamp, data))
+                    try:
+                        self.server.image_buffer.put_nowait((timestamp, data))
+                    except queue.Full:
+                        self.server.image_buffer.get()
+                        self.server.image_buffer.put_nowait((timestamp, data))
                 else:
                     pass
 
             elif data_type == AUDIO_TYPE:
                 if self.server.enable_audio:
-                    self.server.audio_buffer.put_nowait((timestamp, data))
+                    try:
+                        self.server.audio_buffer.put_nowait((timestamp, data))
+                    except queue.Full:
+                        self.server.audio_buffer.get_nowait()
+                        self.server.audio_buffer.put_nowait((timestamp, data))
+
                 else:
                     pass
 
             elif data_type == IMU_TYPE:
                 if self.server.enable_imu:
-                    self.server.imu_buffer.put_nowait((timestamp, data))
+                    try:
+                        self.server.imu_buffer.put_nowait((timestamp, data))
+                    except queue.Full:
+                        self.server.imu_buffer.get_nowait()
+                        self.server.imu_buffer.put_nowait((timestamp, data))
                 else:
                     pass
         
@@ -215,25 +233,43 @@ class NiclaReceiverTCP(socketserver.TCPServer):
  
                         if data_type == RANGE_TYPE:
                             if self.enable_range:
-                                self.range_buffer.put_nowait((timestamp, data))
+                                try:
+                                    self.range_buffer.put_nowait((timestamp, data))
+                                except queue.Full:
+                                    self.range_buffer.get_nowait()
+                                    self.range_buffer.put_nowait((timestamp, data))
                             else:
                                 pass
 
                         elif data_type == IMAGE_TYPE:
                             if self.enable_image:
-                                self.image_buffer.put_nowait((timestamp, data))
+                                try:
+                                    self.image_buffer.put_nowait((timestamp, data))
+                                except queue.Full:
+                                    self.image_buffer.get_nowait()
+                                    self.image_buffer.put_nowait((timestamp, data))
+
                             else:
                                 pass
 
                         elif data_type == AUDIO_TYPE:
                             if self.enable_audio:
-                                self.audio_buffer.put_nowait((timestamp, data))
+                                try:
+                                    self.audio_buffer.put_nowait((timestamp, data))
+                                except queue.Full:
+                                    self.audio_buffer.get_nowait()
+                                    self.audio_buffer.put_nowait((timestamp, data))
+
                             else:
                                 pass
 
                         elif data_type == IMU_TYPE:
                             if self.enable_imu:
-                                self.imu_buffer.put_nowait((timestamp, data))
+                                try:
+                                    self.imu_buffer.put_nowait((timestamp, data))
+                                except queue.Full:
+                                    self.imu_buffer.get_nowait()
+                                    self.imu_buffer.put_nowait((timestamp, data))
                             else:
                                 pass
                             
@@ -282,14 +318,4 @@ class NiclaReceiverTCP(socketserver.TCPServer):
             return self.imu_buffer.get_nowait()
         else: 
             return None
-
-
-
-
-        
-
-
-
-
-
 
