@@ -79,7 +79,7 @@ Follow the below two steps for enjoying your Arduino Nicla Vision board with ROS
     $ roslaunch nicla_vision_ros nicla_sim.launch <optional arguments>
     ```
     Using the `<optional arguments>`, you can decide if to run the simulation in Gazebo or in Rviz, and which sensor to simulate (everything set to true as default).
-  ![Alt Text](assets/nicla_rviz.png)
+  ![Alt Text](assets/nicla_rviz.jpg)
     
 ### 2. Arduino Nicla Vision setup
 After having completed the setup steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git), just turn on your Arduino Nicla Vision. 
