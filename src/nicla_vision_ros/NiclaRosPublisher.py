@@ -8,6 +8,7 @@ from sensor_msgs.msg import Imu
 from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData, AudioDataStamped, AudioInfo
 from cv_bridge import CvBridge, CvBridgeError
+import cv2
 
 from nicla_vision_ros import NiclaReceiverUDP, NiclaReceiverTCP
 
@@ -25,8 +26,8 @@ class NiclaRosPublisher:
         connection_type = rospy.get_param("~connection_type", 'udp')
 
         self.enable_range = rospy.get_param("~enable_range", True)
-        self.enable_camera_raw = rospy.get_param("~enable_camera_raw", False)
-        self.enable_camera_compressed = rospy.get_param("~enable_camera_compressed", True)
+        self.enable_camera_raw = rospy.get_param("~enable_camera_raw", True)
+        self.enable_camera_compressed = rospy.get_param("~enable_camera_compressed", False)
         self.enable_audio = rospy.get_param("~enable_audio", True)
         self.enable_audio_stamped = rospy.get_param("~enable_audio_stamped", False)
         self.enable_audio_recognition_vosk = rospy.get_param("~enable_audio_recognition_vosk", False)
@@ -43,8 +44,8 @@ class NiclaRosPublisher:
             self.range_msg.header.frame_id = nicla_name + "_tof"
             self.range_msg.radiation_type = Range.INFRARED
             self.range_msg.min_range = 0
-            self.range_msg.max_range = 4
-            self.range_msg.field_of_view = 0.471239 #27degrees according to arduino doc
+            self.range_msg.max_range = 3.60
+            self.range_msg.field_of_view = 0.471239 #27degrees according to VL53L1X spec
 
         if self.enable_camera_raw:
             #default topic name of image transport (which is not available in python so we do not use it)
@@ -61,6 +62,9 @@ class NiclaRosPublisher:
             self.image_compressed_pub  = rospy.Publisher(self.image_compressed_topic, CompressedImage, queue_size=5)
 
         if self.enable_camera_raw or self.enable_camera_compressed:
+
+            self.cv_bridge = CvBridge()
+
             camera_info_topic = nicla_name + "/camera/camera_info"
             self.camera_info_msg = CameraInfo() 
             self.camera_info_msg.header.frame_id = nicla_name + "_camera"
@@ -155,17 +159,26 @@ class NiclaRosPublisher:
                 ##Publish info
                 self.camera_info_msg.header.stamp = rospy.Time.from_sec(image[0])
                 self.camera_info_pub.publish(self.camera_info_msg)
+                
+                img_raw = image[1]
 
                 ### PUBLISH COMPRESSED
                 if self.enable_camera_compressed:
+
                     self.image_compressed_msg.header.stamp = rospy.Time.from_sec(image[0])
-                    self.image_compressed_msg.data = image[1]
+
+                    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
+                    result, compressed_img = cv2.imencode('.jpg', img_raw, encode_param) 
+
+                    try:
+                        self.image_compressed_msg.data = self.cv_bridge.cv2_to_imgmsg(compressed_img, encoding="passthrough").data
+                    except CvBridgeError as e:
+                        print(e)   
+
                     self.image_compressed_pub.publish(self.image_compressed_msg)
 
                 ### PUBLISH IMG RAW
                 if self.enable_camera_raw:
-
-                    img_raw = image[1]
 
                     self.image_raw_msg.header.stamp = rospy.Time.from_sec(image[0])
                     self.image_raw_msg.height = img_raw.shape[0]
@@ -174,10 +187,8 @@ class NiclaRosPublisher:
                     self.image_raw_msg.is_bigendian = 0  # Not big endian
                     self.image_raw_msg.step = img_raw.shape[1] * 3  # Width * number of channels
 
-                    # Convert the OpenCV image to ROS Image format using cv_bridge
-                    bridge = CvBridge()
                     try:
-                        self.image_raw_msg.data = bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
+                        self.image_raw_msg.data = self.cv_bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
                     except CvBridgeError as e:
                         print(e)                
 
@@ -210,7 +221,7 @@ class NiclaRosPublisher:
             self.imu_msg.header.stamp = rospy.Time.from_sec(imu[0])
 
             try:
-                acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1])
+                acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('<ffffff', imu[1]) # <: little endian
             except Exception as e:   
                 rospy.logerr("imu pack has ", len(imu[1]), " bytes")
                 raise e
