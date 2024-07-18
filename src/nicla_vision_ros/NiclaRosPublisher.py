@@ -5,6 +5,7 @@ import rospy
 from sensor_msgs.msg import CompressedImage, Image, CameraInfo
 from sensor_msgs.msg import Range
 from sensor_msgs.msg import Imu
+from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData, AudioDataStamped, AudioInfo
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
@@ -25,10 +26,15 @@ class NiclaRosPublisher:
         connection_type = rospy.get_param("~connection_type", 'udp')
 
         self.enable_range = rospy.get_param("~enable_range", True)
-        self.enable_camera_raw = rospy.get_param("~enable_camera_raw", False)
-        self.enable_camera_compressed = rospy.get_param("~enable_camera_compressed", True)
+        self.enable_camera_raw = rospy.get_param("~enable_camera_raw", True)
+        self.enable_camera_compressed = rospy.get_param("~enable_camera_compressed", False)
         self.enable_audio = rospy.get_param("~enable_audio", True)
         self.enable_audio_stamped = rospy.get_param("~enable_audio_stamped", False)
+        self.enable_audio_recognition_vosk = rospy.get_param("~enable_audio_recognition_vosk", False)
+        self.audio_recognition_model_path = rospy.get_param("~audio_recognition_model_path", "")
+        self.audio_recognition_grammar = rospy.get_param("~audio_recognition_grammar", "")
+        self.audio_recognition_listen_seconds = rospy.get_param("~audio_recognition_listen_seconds", 2)
+        self.audio_recognition_wave_output_filename = rospy.get_param("~audio_recognition_wave_output_filename", "")
         self.enable_imu = rospy.get_param("~enable_imu", True)
 
         if self.enable_range:
@@ -38,8 +44,8 @@ class NiclaRosPublisher:
             self.range_msg.header.frame_id = nicla_name + "_tof"
             self.range_msg.radiation_type = Range.INFRARED
             self.range_msg.min_range = 0
-            self.range_msg.max_range = 4
-            self.range_msg.field_of_view = 0.471239 #27degrees according to arduino doc
+            self.range_msg.max_range = 3.60
+            self.range_msg.field_of_view = 0.471239 #27degrees according to VL53L1X spec
 
         if self.enable_camera_raw:
             #default topic name of image transport (which is not available in python so we do not use it)
@@ -90,7 +96,7 @@ class NiclaRosPublisher:
             self.audio_info_msg.bitrate = 0
             self.audio_info_msg.coding_format = "raw"
             self.audio_info_pub = rospy.Publisher(audio_info_topic, AudioInfo, queue_size=1)
-        
+
         if self.enable_imu:
             imu_topic = nicla_name + "/imu"
             self.imu_msg = Imu()
@@ -117,6 +123,19 @@ class NiclaRosPublisher:
         else:
             rospy.logerr("Connection type ", connection_type, " not known")
             raise Exception("Connection type not known")
+        
+        if self.enable_audio_recognition_vosk:
+            if not self.audio_recognition_model_path:
+                rospy.logerr("Path for VOSK recognizer model is an empty string! Please provide 'audio_recognition_model_path' arg")
+                exit()
+
+            from nicla_vision_ros import SpeechRecognizer
+            self.speech_recognizer = SpeechRecognizer.SpeechRecognizer(
+                self.audio_recognition_model_path, 
+                self.audio_recognition_grammar, 
+                self.audio_recognition_listen_seconds,
+                self.audio_recognition_wave_output_filename)
+            self.speech_recognizer_pub = rospy.Publisher(nicla_name + '/audio_recognized', String, queue_size=10)
             
         self.nicla_receiver_server.serve()
 
@@ -169,9 +188,10 @@ class NiclaRosPublisher:
                     self.image_raw_pub.publish(self.image_raw_msg)
 
         ### AUDIO DATA
-        if self.enable_audio or self.enable_audio_stamped :
-
+        if self.enable_audio or self.enable_audio_stamped:
             self.audio_info_pub.publish(self.audio_info_msg)
+
+        if self.enable_audio or self.enable_audio_stamped or self.enable_audio_recognition_vosk:
 
             if (audio_data := self.nicla_receiver_server.get_audio()) is not None:
 
@@ -184,12 +204,17 @@ class NiclaRosPublisher:
                     self.audio_stamped_msg.audio.data = audio_data[1]
                     self.audio_stamped_pub.publish(self.audio_stamped_msg)
 
+                if self.enable_audio_recognition_vosk:
+                    audio_recognized = self.speech_recognizer.process_audio(audio_data[1])
+                    if audio_recognized: #if not empty
+                        self.speech_recognizer_pub.publish(audio_recognized)
+
         ### IMU DATA
         if self.enable_imu and ((imu := self.nicla_receiver_server.get_imu()) is not None):
             self.imu_msg.header.stamp = rospy.Time.from_sec(imu[0])
 
             try:
-                acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1])
+                acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1]) # >: big endian
             except Exception as e:   
                 rospy.logerr("imu pack has ", len(imu[1]), " bytes")
                 raise e
