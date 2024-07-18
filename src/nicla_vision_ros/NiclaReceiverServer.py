@@ -34,7 +34,12 @@ class UDPHandler(socketserver.BaseRequestHandler):
             
             if data_type == RANGE_TYPE:
                 if self.server.enable_range:
-                    self.server.range_buffer.put_nowait((timestamp, data))
+                    try:
+                        self.server.range_buffer.put_nowait((timestamp, data))
+                    except queue.Full:
+                        self.server.range_buffer.get()
+                        self.server.range_buffer.put_nowait((timestamp, data))
+
                 else:
                     pass
 
@@ -48,12 +53,12 @@ class UDPHandler(socketserver.BaseRequestHandler):
                     # print("SIZE: ", size_packet)
                     # print("IDX IMG: ", idx_img)
 
-                    if not idx_img:
+                    if not idx_img: #first half
                         self.server.last_timestamp_img = timestamp_img
                         self.server.last_idx_img = idx_img
                         self.server.last_half_img = packet[10:]
                     
-                    else:
+                    else: #second half
                         if timestamp_img == self.server.last_timestamp_img:
 
                             half_img_bin_0 = self.server.last_half_img                  
@@ -72,20 +77,34 @@ class UDPHandler(socketserver.BaseRequestHandler):
                             # Stack the images vertically
                             combined_image = np.vstack((half_img_dec_1, half_img_dec_0))
 
-                            self.server.image_buffer.put_nowait((timestamp, combined_image))
+                            try:
+                                self.server.image_buffer.put_nowait((timestamp, combined_image))
+                            except queue.Full:
+                                self.server.image_buffer.get()
+                                self.server.image_buffer.put_nowait((timestamp, combined_image))
+
 
                 else:
                     pass
 
             elif data_type == AUDIO_TYPE:
                 if self.server.enable_audio:
-                    self.server.audio_buffer.put_nowait((timestamp, data))
+                    try:
+                        self.server.audio_buffer.put_nowait((timestamp, data))
+                    except queue.Full:
+                        self.server.audio_buffer.get_nowait()
+                        self.server.audio_buffer.put_nowait((timestamp, data))
+
                 else:
                     pass
 
             elif data_type == IMU_TYPE:
                 if self.server.enable_imu:
-                    self.server.imu_buffer.put_nowait((timestamp, data))
+                    try:
+                        self.server.imu_buffer.put_nowait((timestamp, data))
+                    except queue.Full:
+                        self.server.imu_buffer.get_nowait()
+                        self.server.imu_buffer.put_nowait((timestamp, data))
                 else:
                     pass
         
@@ -218,7 +237,6 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
         bkp_bytes_packets = bytes([])
         timestamp = None
-        first_half = True
         half_img = None
 
         while self.thread_regularizer:
@@ -258,43 +276,52 @@ class NiclaReceiverTCP(socketserver.TCPServer):
  
                         if data_type == RANGE_TYPE:
                             if self.enable_range:
-                                self.range_buffer.put_nowait((timestamp, data))
+                                try:
+                                    self.range_buffer.put_nowait((timestamp, data))
+                                except queue.Full:
+                                    self.range_buffer.get_nowait()
+                                    self.range_buffer.put_nowait((timestamp, data))
                             else:
                                 pass
 
                         elif data_type == IMAGE_TYPE:
                             if self.enable_image:
+                                idx_img = data[0]
+                                half_img_bin = np.asarray(bytearray(data[1:]), dtype="uint8")
 
-                                half_img_bin = np.asarray(bytearray(data), dtype="uint8")
                                 half_img_dec = cv2.imdecode(half_img_bin, cv2.IMREAD_UNCHANGED) 
-                                half_img_dec = np.dstack((half_img_dec[:,:,2], half_img_dec[:,:,1], half_img_dec[:,:,0]))
 
+                                half_img_dec = np.dstack((half_img_dec[:,:,2], half_img_dec[:,:,1], half_img_dec[:,:,0]))
                                  
-                                if first_half:
-                                    first_half = False
+                                if not idx_img: #first half
                                     half_img = half_img_dec
                                      
-                                else:
-                                    first_half = True
+                                else: #second half
                                     # Stack the images vertically
                                     combined_image = np.vstack((half_img_dec, half_img))
-
-                                    _, buffer = cv2.imencode('.png', combined_image)
-                                    binary_buffer = buffer.tobytes()
-                                    self.image_buffer.put_nowait((timestamp, binary_buffer))
+                                    self.image_buffer.put_nowait((timestamp, combined_image))
                                     half_img = None
                             else:
                                 pass                       
 
                         elif data_type == AUDIO_TYPE:
                             if self.enable_audio:
-                                self.audio_buffer.put_nowait((timestamp, data))
+                                try:
+                                    self.audio_buffer.put_nowait((timestamp, data))
+                                except:
+                                    self.audio_buffer.get_nowait()
+                                    self.audio_buffer.put_nowait((timestamp, data))
+
                             else:
                                 pass
 
                         elif data_type == IMU_TYPE:
                             if self.enable_imu:
-                                self.imu_buffer.put_nowait((timestamp, data))
+                                try:
+                                    self.imu_buffer.put_nowait((timestamp, data))
+                                except queue.Full:
+                                    self.imu_buffer.get_nowait()
+                                    self.imu_buffer.put_nowait((timestamp, data))
                             else:
                                 pass
                             
