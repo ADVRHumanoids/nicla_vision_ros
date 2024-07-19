@@ -28,7 +28,6 @@
 # OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 
-
 # receiving distance and picture from Arduino Nicla Vision (client)
 # and showing them using the terminal, numpy and OpenCV
 # the picture fits into one UDP packet after compression
@@ -57,35 +56,36 @@ packet_size = 65540
 # image window init
 cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
 
-# server socket init 
+# server socket init
 server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 server.bind((ip, port))
 print("Waiting for niclabox to stream on", ip, ":", port)
 
+
 def receive_and_ros():
-    global FLAG 
+    global FLAG
 
     packet, client_address = server.recvfrom(packet_size)
 
     data_type = packet[0]
     packet = packet[1:]
- 
+
     # if len(packet) < 100: # a small packet is the distance
     if data_type == DISTANCE_TYPE:
         distance = packet
         distance = int.from_bytes(distance, "big")
 
         # Print distance in terminal
-        print("Distance (mm): ", distance)           
+        print("Distance (mm): ", distance)
 
     elif data_type == IMAGE_TYPE:
         picture = packet
-       
+
         # Show image with numpy OpenCV
         image = cv2.imdecode(np.frombuffer(picture, np.uint8), cv2.IMREAD_COLOR)
         cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
         cv2.imshow("niclabox", image)
-        if cv2.waitKey(1) == ord('q'): # Press Q to exit
+        if cv2.waitKey(1) == ord("q"):  # Press Q to exit
             exit(0)
 
         # uncomment to output to a file without using numpy and OpenCV
@@ -110,7 +110,9 @@ def receive_and_ros():
             pcm_data = np.concatenate(accumulated_audio_data)
 
             # Create an AudioSegment from the PCM data
-            audio_segment = AudioSegment(pcm_data.tobytes(), frame_rate=16000, sample_width=2, channels=1)
+            audio_segment = AudioSegment(
+                pcm_data.tobytes(), frame_rate=16000, sample_width=2, channels=1
+            )
 
             # Export AudioSegment to an MP3 file
             audio_segment.export("recording.mp3", format="mp3")
@@ -118,7 +120,6 @@ def receive_and_ros():
             FLAG = 0
 
 
-    
 while True:
     try:
         receive_and_ros()
@@ -126,4 +127,4 @@ while True:
     except OSError as e:
         print("Error: ", e)
 
-        pass # try again
+        pass  # try again

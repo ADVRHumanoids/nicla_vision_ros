@@ -5,16 +5,18 @@ import rospy
 if __name__ == "__main__":
 
     rospy.init_node("nicla_receiver")
-    driver_version = rospy.get_param("~driver_version", "arduino") 
+    driver_version = rospy.get_param("~driver_version", "arduino")
 
     nicla_ros_publisher = None
 
     if driver_version == "arduino":
         from nicla_vision_ros import NiclaRosPublisher
+
         nicla_ros_publisher = NiclaRosPublisher()
 
-    elif driver_version == "micropy" :
+    elif driver_version == "micropy":
         from nicla_vision_ros import NiclaRosPublisherMicroPy
+
         nicla_ros_publisher = NiclaRosPublisherMicroPy()
 
     else:
@@ -22,7 +24,6 @@ if __name__ == "__main__":
         exit(-1)
 
     rate = rospy.Rate(500)
-
 
     rospy.loginfo("Starting receiving loop")
     while not rospy.is_shutdown():
@@ -34,7 +35,7 @@ if __name__ == "__main__":
             rospy.logerr(e)
             nicla_ros_publisher.stop()
             break
-        
+
         rate.sleep()
 
     nicla_ros_publisher.stop()

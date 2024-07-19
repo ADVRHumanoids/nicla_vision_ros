@@ -3,22 +3,22 @@
   <name>nicla_vision_ros</name>
   <version>1.0.0</version>
   <description>
-    The nicla_vision_ros package is an integration of the Arduino Nicla Vision board in the ROS world. 
+    Integration of the Arduino Nicla Vision board in the ROS world. 
     Sensors data from the Nicla Vision is collected and trasmited to the relevant ROS topics
   </description>
 
   <maintainer email="toridebraus@gmail.com">Davide Torielli</maintainer>
   <maintainer email="damiano.gasperini98@gmail.com">Damiano Gasperini</maintainer>  
 
-  <author email="toridebraus@gmail.com">Davide Torielli</author>
-  <author email="damiano.gasperini98@gmail.com">Damiano Gasperini</author>  
-  <author email="delbianco.edoardo@gmail.com">Edoardo Del Bianco</author>
-  <author email="rollo.f96@gmail.com">Federico Rollo</author>
-
 	<license>Apache License 2.0</license>
 
   <url type="repository">https://github.com/ADVRHumanoids/nicla_vision_ros/</url>
 	<url type="bugtracker">https://github.com/ADVRHumanoids/nicla_vision_ros/issues/</url>
+
+  <author email="toridebraus@gmail.com">Davide Torielli</author>
+  <author email="damiano.gasperini98@gmail.com">Damiano Gasperini</author>  
+  <author email="delbianco.edoardo@gmail.com">Edoardo Del Bianco</author>
+  <author email="rollo.f96@gmail.com">Federico Rollo</author>
 
   <buildtool_depend>catkin</buildtool_depend>
 
@@ -26,5 +26,10 @@
   <depend>sensor_msgs</depend>
   <depend>audio_common_msgs</depend>
   <depend>cv_bridge</depend>
+
+  <exec_depend>xacro</exec_depend>
+  <exec_depend>gazebo_ros</exec_depend>
+  <exec_depend>robot_state_publisher</exec_depend>
+  <exec_depend>rviz</exec_depend>
 
 </package>

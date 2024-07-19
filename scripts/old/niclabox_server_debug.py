@@ -13,52 +13,60 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import wave
 
-import cv2 
-from PIL import Image 
-import struct 
+import cv2
+from PIL import Image
+import struct
 
 
 IMAGE_TYPE = 0b00
 AUDIO_TYPE = 0b01
 RANGE_TYPE = 0b10
 IMU_TYPE = 0b11
-        
+
+
 class TCPHandler(socketserver.BaseRequestHandler):
-    def handle(self): 
-        # self.request.settimeout(15.0)  # Set a timeout  
+    def handle(self):
+        # self.request.settimeout(15.0)  # Set a timeout
         self.server.nicla_disconnect = False
 
-        while True: 
+        while True:
             try:
                 packet = self.request.recv(65000)
                 # print("LEN RECV: ", len(packet))
                 # print("IN RECV: ", np.frombuffer(packet, dtype="int16"))
 
                 self.server.pdm_buffer.put_nowait(packet)
-                
 
             #     if not packet:
-            #         break 
+            #         break
             #     timestamp = time.time()
-            #     timestamp = struct.pack('>d', timestamp) 
-            #     packet = timestamp + packet 
-            #     self.server.receiving_buffer.put_nowait(packet) 
+            #     timestamp = struct.pack('>d', timestamp)
+            #     packet = timestamp + packet
+            #     self.server.receiving_buffer.put_nowait(packet)
             # except socket.timeout:
             #     print("Warning: Nicla disconnected! Resetting server... ")
             #     self.server.receiving_buffer.queue.clear()
             #     self.server.nicla_disconnect = True
-            #     break 
+            #     break
             except Exception as e:
                 print(f"Exception: {e}")
                 self.server.receiving_buffer.queue.clear()
                 self.server.nicla_disconnect = True
-                break  # Break the loop on any other exception 
+                break  # Break the loop on any other exception
 
-            
+
 class NiclaReceiverTCP(socketserver.TCPServer):
-    
-    def __init__(self, server_ip, server_port, enable_range=False, enable_image=False, enable_audio=False, enable_imu=False):
-         
+
+    def __init__(
+        self,
+        server_ip,
+        server_port,
+        enable_range=False,
+        enable_image=False,
+        enable_audio=False,
+        enable_imu=False,
+    ):
+
         super().__init__((server_ip, server_port), TCPHandler)
 
         self.enable_range = enable_range
@@ -74,17 +82,21 @@ class NiclaReceiverTCP(socketserver.TCPServer):
             self.audio_buffer = queue.Queue(maxsize=100)
         if self.enable_imu:
             self.imu_buffer = queue.Queue(maxsize=100)
-        
-        if self.enable_range or self.enable_image or self.enable_audio or self.enable_imu:
+
+        if (
+            self.enable_range
+            or self.enable_image
+            or self.enable_audio
+            or self.enable_imu
+        ):
             self.receiving_buffer = queue.Queue(maxsize=200)
 
-        self.server_thread = None   
-        self.nicla_disconnect = False  
+        self.server_thread = None
+        self.nicla_disconnect = False
 
         # Set up the plot
         self.max_points = 200
         self.numbers = []
-
 
         self.pdm_buffer = queue.Queue(maxsize=60000)
 
@@ -92,25 +104,20 @@ class NiclaReceiverTCP(socketserver.TCPServer):
         self.pdm_plotter.daemon = True
         self.pdm_plotter.start()
 
-
-    
-
-          
     def debug_recv(self):
-        first = True 
+        first = True
         size = 0
 
         bytes_arr = bytes([])
 
-        packet = bytes([]) 
+        packet = bytes([])
 
-        cnt = 0 
+        cnt = 0
         while cnt < 4:
-            try:  
+            try:
                 self.bytes_packets = self.pdm_buffer.get_nowait()
 
                 bytes_arr = bytes_arr + self.bytes_packets
-
 
                 if first:
                     first = False
@@ -120,46 +127,40 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                     bytes_arr = bytes_arr[4:]
 
                     print("SIZE: ", size)
- 
-                
 
                 print("BYTES LEN: ", len(bytes_arr))
 
-                if len(bytes_arr)>= size:
+                if len(bytes_arr) >= size:
                     print("DENTRO")
                     cnt += 1
                     first = True
-                    packet = bytes_arr[:size] #153600
+                    packet = bytes_arr[:size]  # 153600
 
                     print("TIMESTAMP: ", int.from_bytes(bytes_arr[:4], "little"))
                     print("TYPE: ", int.from_bytes(bytes_arr[4:5], "little"))
                     # print(int.from_bytes(bytes_arr[5:9], "little"))
 
-                    with open("my_file_"+str(cnt)+".txt", "wb") as binary_file:
+                    with open("my_file_" + str(cnt) + ".txt", "wb") as binary_file:
                         # Write bytes to file
                         binary_file.write(packet[5:])
 
                     bytes_arr = bytes_arr[size:]
- 
-                    # print("LEN IS: ", len(bytes_arr))
 
+                    # print("LEN IS: ", len(bytes_arr))
 
             except:
                 continue
-        
-       
 
-    def plotting(self):          
+    def plotting(self):
 
         while True:
-            try:  
+            try:
                 self.bytes_packets = self.pdm_buffer.get_nowait()
                 # print("IN THREAD: ", np.frombuffer(self.bytes_packets, dtype="int16"))
 
-
                 new = np.frombuffer(self.bytes_packets, dtype="int16")
                 new = new.tolist()
-                self.numbers.extend(new) 
+                self.numbers.extend(new)
                 # if len(self.numbers) > self.max_points:
                 #     # Plotting the data
                 #     plt.figure(figsize=(50, 5))
@@ -175,13 +176,13 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                 #     plt.show()
                 #     self.numbers = []
 
-                if len(self.numbers)>= 16000*5:
+                if len(self.numbers) >= 16000 * 5:
                     # pcm_data = np.cumsum(self.numbers, dtype=np.int32)
                     # pcm_data = np.array(pcm_data, dtype=np.int16) >> 16
 
                     self.numbers = np.array(self.numbers, dtype="int16")
 
-                    with wave.open("audio.wav", 'w') as wf:
+                    with wave.open("audio.wav", "w") as wf:
                         wf.setnchannels(1)  # Mono
                         wf.setsampwidth(2)  # 2 bytes (16 bits)
                         wf.setframerate(16000)
@@ -190,7 +191,7 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                     break
 
             except:
-                continue 
+                continue
 
     def serve(self):
         self.thread_regularizer = True
@@ -206,9 +207,9 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
         while self.thread_regularizer:
 
-            try:  
+            try:
                 bytes_packets = self.receiving_buffer.get_nowait()
-                timestamp = struct.unpack('>d', bytes_packets[:8])[0]
+                timestamp = struct.unpack(">d", bytes_packets[:8])[0]
                 bytes_packets = bytes_packets[8:]
 
                 if self.nicla_disconnect:
@@ -219,26 +220,26 @@ class NiclaReceiverTCP(socketserver.TCPServer):
 
             bytes_packets = bkp_bytes_packets + bytes_packets
             bkp_bytes_packets = bytes([])
-             
+
             if len(bytes_packets) < 9:
                 print("Got a packet from receiver less than header size!")
                 continue
             else:
-                total_length = len(bytes_packets)                 
+                total_length = len(bytes_packets)
                 loop_termination_flag = True
-                
+
                 while loop_termination_flag:
                     size_packet = int.from_bytes(bytes_packets[:4], "big")
 
                     if total_length - 4 >= size_packet:
-                        packet = bytes_packets[4:size_packet+4]
-                        bytes_packets = bytes_packets[size_packet+4:]
+                        packet = bytes_packets[4 : size_packet + 4]
+                        bytes_packets = bytes_packets[size_packet + 4 :]
 
-                        #timestamp = int.from_bytes(packet[:4], "big")
-                        
+                        # timestamp = int.from_bytes(packet[:4], "big")
+
                         data_type = packet[4]
                         data = packet[5:]
- 
+
                         if data_type == RANGE_TYPE:
                             if self.enable_range:
                                 self.range_buffer.put_nowait((timestamp, data))
@@ -262,17 +263,14 @@ class NiclaReceiverTCP(socketserver.TCPServer):
                                 self.imu_buffer.put_nowait((timestamp, data))
                             else:
                                 pass
-                            
-                    else: 
-                        bkp_bytes_packets = bytes_packets 
+
+                    else:
+                        bkp_bytes_packets = bytes_packets
                         loop_termination_flag = False
 
-                    total_length = len(bytes_packets) 
-                    if total_length == 0: 
+                    total_length = len(bytes_packets)
+                    if total_length == 0:
                         loop_termination_flag = False
-
-                
-
 
     def stop_serve(self):
         print("stopping")
@@ -281,8 +279,6 @@ class NiclaReceiverTCP(socketserver.TCPServer):
         self.shutdown()
         self.server_thread.join()
         self.server_close()
-
-        
 
     def get_range(self):
 
@@ -296,33 +292,32 @@ class NiclaReceiverTCP(socketserver.TCPServer):
             return self.image_buffer.get_nowait()
         else:
             return None
-    
+
     def get_audio(self):
         if not self.audio_buffer.empty():
             return self.audio_buffer.get_nowait()
         else:
             return None
-    
-    def get_imu(self): 
-        if not self.imu_buffer.empty(): 
+
+    def get_imu(self):
+        if not self.imu_buffer.empty():
             return self.imu_buffer.get_nowait()
-        else: 
+        else:
             return None
 
 
-
-
-        
-
 if __name__ == "__main__":
- 
-    nicla_receiver_server = NiclaReceiverTCP("10.240.23.49", 8002, 
-                                            enable_range=False, 
-                                            enable_image=False,
-                                            enable_audio=True,
-                                            enable_imu=False)
-   
-    try: 
+
+    nicla_receiver_server = NiclaReceiverTCP(
+        "10.240.23.49",
+        8002,
+        enable_range=False,
+        enable_image=False,
+        enable_audio=True,
+        enable_imu=False,
+    )
+
+    try:
         nicla_receiver_server.serve()
     except Exception as e:
         print(e)
@@ -332,9 +327,6 @@ if __name__ == "__main__":
         # print("Server running!")
 
     nicla_receiver_server.stop()
-
-
-
 
 
 ##########################################################################################################à
@@ -364,30 +356,30 @@ if __name__ == "__main__":
 # # image window init
 # cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
 
-# # server socket init 
+# # server socket init
 # server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # server.bind((ip, port))
 # print("Waiting for niclabox to stream on", ip, ":", port)
 
 # def receive_and_ros():
-#     global FLAG 
+#     global FLAG
 
 #     packet, client_address = server.recvfrom(packet_size)
 
 #     data_type = packet[0]
 #     packet = packet[1:]
- 
+
 #     # if len(packet) < 100: # a small packet is the distance
 #     if data_type == DISTANCE_TYPE:
 #         distance = packet
 #         distance = int.from_bytes(distance, "big")
 
 #         # Print distance in terminal
-#         print("Distance (mm): ", distance)           
+#         print("Distance (mm): ", distance)
 
 #     elif data_type == IMAGE_TYPE:
 #         picture = packet
-       
+
 #         # Show image with numpy OpenCV
 #         image = cv2.imdecode(np.frombuffer(picture, np.uint8), cv2.IMREAD_COLOR)
 #         cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
@@ -425,7 +417,6 @@ if __name__ == "__main__":
 #             FLAG = 0
 
 
-    
 # while True:
 #     try:
 #         receive_and_ros()

@@ -13,34 +13,36 @@ import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import wave
 
-import cv2 
-from PIL import Image 
-import struct 
+import cv2
+from PIL import Image
+import struct
 
 
 IMAGE_TYPE = 0b00
 AUDIO_TYPE = 0b01
 RANGE_TYPE = 0b10
 IMU_TYPE = 0b11
+
+
 class UDPHandler(socketserver.BaseRequestHandler):
     def handle(self):
 
-        #with udp, self.request is a pair (data, socket)
+        # with udp, self.request is a pair (data, socket)
         packet = self.request[0]
-        #socket = self.request[1]
- 
+        # socket = self.request[1]
+
         print("LEN RECV: ", len(packet))
 
         # print(np.frombuffer(packet, dtype="uint8"))
-            
-        # size_packet = int.from_bytes(packet[:4], "big")   
+
+        # size_packet = int.from_bytes(packet[:4], "big")
 
         # if size_packet == len(packet[4:]):
 
         #     timestamp = time.time() #int.from_bytes(packet[4:8], "big")
         #     data_type = packet[8]
         #     data = packet[9:]
-            
+
         #     if data_type == RANGE_TYPE:
         #         if self.server.enable_range:
         #             self.server.range_buffer.put_nowait((timestamp, data))
@@ -64,13 +66,22 @@ class UDPHandler(socketserver.BaseRequestHandler):
         #             self.server.imu_buffer.put_nowait((timestamp, data))
         #         else:
         #             pass
-        
-        # else:  
+
+        # else:
         #     print("Warning: received packet of length {}, but expected length was {}!".format(len(packet[4:]), size_packet))
+
 
 class NiclaReceiverUDP(socketserver.UDPServer):
 
-    def __init__(self, server_ip, server_port, enable_range=False, enable_image=False, enable_audio=False, enable_imu=False):
+    def __init__(
+        self,
+        server_ip,
+        server_port,
+        enable_range=False,
+        enable_image=False,
+        enable_audio=False,
+        enable_imu=False,
+    ):
 
         super().__init__((server_ip, server_port), UDPHandler)
 
@@ -126,18 +137,19 @@ class NiclaReceiverUDP(socketserver.UDPServer):
             return None
 
 
-        
-
 if __name__ == "__main__":
-    #192.168.1.103   10.240.23.49
- 
-    nicla_receiver_server = NiclaReceiverUDP("10.42.0.1", 8002, 
-                                            enable_range=False, 
-                                            enable_image=False,
-                                            enable_audio=True,
-                                            enable_imu=False)
-   
-    try: 
+    # 192.168.1.103   10.240.23.49
+
+    nicla_receiver_server = NiclaReceiverUDP(
+        "10.42.0.1",
+        8002,
+        enable_range=False,
+        enable_image=False,
+        enable_audio=True,
+        enable_imu=False,
+    )
+
+    try:
         nicla_receiver_server.serve()
     except Exception as e:
         print(e)
@@ -147,9 +159,6 @@ if __name__ == "__main__":
         # print("Server running!")
 
     nicla_receiver_server.stop()
-
-
-
 
 
 ##########################################################################################################à
@@ -179,30 +188,30 @@ if __name__ == "__main__":
 # # image window init
 # cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
 
-# # server socket init 
+# # server socket init
 # server = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 # server.bind((ip, port))
 # print("Waiting for niclabox to stream on", ip, ":", port)
 
 # def receive_and_ros():
-#     global FLAG 
+#     global FLAG
 
 #     packet, client_address = server.recvfrom(packet_size)
 
 #     data_type = packet[0]
 #     packet = packet[1:]
- 
+
 #     # if len(packet) < 100: # a small packet is the distance
 #     if data_type == DISTANCE_TYPE:
 #         distance = packet
 #         distance = int.from_bytes(distance, "big")
 
 #         # Print distance in terminal
-#         print("Distance (mm): ", distance)           
+#         print("Distance (mm): ", distance)
 
 #     elif data_type == IMAGE_TYPE:
 #         picture = packet
-       
+
 #         # Show image with numpy OpenCV
 #         image = cv2.imdecode(np.frombuffer(picture, np.uint8), cv2.IMREAD_COLOR)
 #         cv2.namedWindow("niclabox", cv2.WINDOW_NORMAL)
@@ -240,7 +249,6 @@ if __name__ == "__main__":
 #             FLAG = 0
 
 
-    
 # while True:
 #     try:
 #         receive_and_ros()
