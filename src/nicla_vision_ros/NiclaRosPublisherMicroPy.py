@@ -9,11 +9,11 @@ from std_msgs.msg import String
 from audio_common_msgs.msg import AudioData, AudioDataStamped, AudioInfo
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
+import numpy as np
 
-from nicla_vision_ros import NiclaReceiverUDP, NiclaReceiverTCP
+from nicla_vision_ros import NiclaReceiverUDPMicroPy, NiclaReceiverTCPMicroPy
 
-
-class NiclaRosPublisher:
+class NiclaRosPublisherMicroPy:
 
     def __init__(self) -> None:
 
@@ -62,9 +62,6 @@ class NiclaRosPublisher:
             self.image_compressed_pub  = rospy.Publisher(self.image_compressed_topic, CompressedImage, queue_size=5)
 
         if self.enable_camera_raw or self.enable_camera_compressed:
-
-            self.cv_bridge = CvBridge()
-
             camera_info_topic = nicla_name + "/camera/camera_info"
             self.camera_info_msg = CameraInfo() 
             self.camera_info_msg.header.frame_id = nicla_name + "_camera"
@@ -112,10 +109,10 @@ class NiclaRosPublisher:
 
         if connection_type == "udp":
             self.nicla_receiver_server = NiclaReceiverUDP(ip, port, 
-                                                            enable_range=self.enable_range, 
-                                                            enable_image=self.enable_camera_raw or self.enable_camera_compressed,
-                                                            enable_audio=self.enable_audio or self.enable_audio_stamped,
-                                                            enable_imu=self.enable_imu)
+                                                                        enable_range=self.enable_range, 
+                                                                        enable_image=self.enable_camera_raw or self.enable_camera_compressed,
+                                                                        enable_audio=self.enable_audio or self.enable_audio_stamped,
+                                                                        enable_imu=self.enable_imu)
         elif connection_type == "tcp":
             self.nicla_receiver_server = NiclaReceiverTCP(ip, port, 
                                                             enable_range=self.enable_range, 
@@ -148,7 +145,7 @@ class NiclaRosPublisher:
         if self.enable_range and ((range := self.nicla_receiver_server.get_range()) is not None):
 
             self.range_msg.header.stamp = rospy.Time.from_sec(range[0])
-            self.range_msg.range = int.from_bytes(range[1], "little")/1000
+            self.range_msg.range = int.from_bytes(range[1], "big")/1000
             self.range_pub.publish(self.range_msg)
 
         ### PUBLISH IMAGE
@@ -159,26 +156,20 @@ class NiclaRosPublisher:
                 ##Publish info
                 self.camera_info_msg.header.stamp = rospy.Time.from_sec(image[0])
                 self.camera_info_pub.publish(self.camera_info_msg)
-                
-                img_raw = image[1]
 
                 ### PUBLISH COMPRESSED
                 if self.enable_camera_compressed:
-
                     self.image_compressed_msg.header.stamp = rospy.Time.from_sec(image[0])
-
-                    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-                    result, compressed_img = cv2.imencode('.jpg', img_raw, encode_param) 
-
-                    try:
-                        self.image_compressed_msg.data = self.cv_bridge.cv2_to_imgmsg(compressed_img, encoding="passthrough").data
-                    except CvBridgeError as e:
-                        print(e)   
-
+                    self.image_compressed_msg.data = image[1]
                     self.image_compressed_pub.publish(self.image_compressed_msg)
 
                 ### PUBLISH IMG RAW
                 if self.enable_camera_raw:
+                    # Convert the byte array to a numpy array
+                    nparr = np.frombuffer(image[1], np.uint8)
+
+                    # Decode the compressed image
+                    img_raw = cv2.imdecode(nparr, cv2.IMREAD_COLOR) #NOTE: BGR CONVENTION 
 
                     self.image_raw_msg.header.stamp = rospy.Time.from_sec(image[0])
                     self.image_raw_msg.height = img_raw.shape[0]
@@ -187,8 +178,10 @@ class NiclaRosPublisher:
                     self.image_raw_msg.is_bigendian = 0  # Not big endian
                     self.image_raw_msg.step = img_raw.shape[1] * 3  # Width * number of channels
 
+                    # Convert the OpenCV image to ROS Image format using cv_bridge
+                    bridge = CvBridge()
                     try:
-                        self.image_raw_msg.data = self.cv_bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
+                        self.image_raw_msg.data = bridge.cv2_to_imgmsg(img_raw, encoding="bgr8").data
                     except CvBridgeError as e:
                         print(e)                
 
@@ -221,7 +214,7 @@ class NiclaRosPublisher:
             self.imu_msg.header.stamp = rospy.Time.from_sec(imu[0])
 
             try:
-                acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('<ffffff', imu[1]) # <: little endian
+                acc_x, acc_y, acc_z, gyro_x, gyro_y, gyro_z = struct.unpack('>ffffff', imu[1]) # >: big endian
             except Exception as e:   
                 rospy.logerr("imu pack has ", len(imu[1]), " bytes")
                 raise e

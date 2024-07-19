@@ -5,6 +5,7 @@
     <arg name="receiver_ip"/>
     <arg name="receiver_port" default="8002" />
     <arg name="connection_type"/> <!-- tcp, udp -->
+    <arg name="driver_version" default="arduino"/> <!-- arduino, micropy -->
 
     <arg name="enable_range" default="true" />
 
@@ -31,6 +32,7 @@
         <param name="receiver_ip" value="$(arg receiver_ip)" />
         <param name="receiver_port" value="$(arg receiver_port)" />
         <param name="connection_type" value="$(arg connection_type)" />
+        <param name="driver_version" value="$(arg driver_version)" />
 
         <param name="enable_range" value="$(arg enable_range)" />
         <param name="enable_camera_raw" value="$(arg enable_camera_raw)" />

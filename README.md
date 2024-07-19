@@ -42,6 +42,12 @@ In this repository you can find the Python code optimised for receiving the data
 # Installation
 Step-by-step instructions on how to get the ROS package running (tested on ROS Noetic).
 
+Only noetic version has been released for ROS1:   
+`sudo apt install ros-$ROS_DISTRO-nicla-vision-ros`  (to be released soon)  
+For ROS2, check https://github.com/ADVRHumanoids/nicla_vision_ros2.git
+
+### Source installation
+Usual `catkin` build :
 ```bash
 $ cd <your_workpace>/src
 $ git clone https://github.com/ADVRHumanoids/nicla_vision_ros.git
@@ -50,11 +56,22 @@ $ catkin build
 $ source <your_workpace>/devel/setup.bash
 ```
 
-**Note:** binary package will be released soon for ROS Noetic!
+## Arduino Nicla Vision setup
+After having completed the setup steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git), just turn on your Arduino Nicla Vision. 
+When you power on your Arduino Nicla Vision, it will automatically connect to the network and it will start streaming to your ROS-running machine.
+
+## Optional Audio Recognition with VOSK
+It is possible to run a speech recognition feature directly on this module, that will then publish the recognized words on the `/nicla/audio_recognized` topic. At the moment, [VOSK](https://alphacephei.com/vosk/) is utilized. Only Arduino version is supported.
+#### VOSK setup
+1. ```pip install vosk```
+2. Download a VOSK model https://alphacephei.com/vosk/models
+3. Check the `recognition` arguments in the ```nicla_receiver.launch``` file
+
 
 # Usage 
 Follow the below two steps for enjoying your Arduino Nicla Vision board with ROS!
-### 1. Run the ROS package
+
+## Run the ROS package
 -  Launch the package:
     ```bash
     $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" connection_type:="tcp/udp" <optional arguments>
@@ -73,8 +90,9 @@ Follow the below two steps for enjoying your Arduino Nicla Vision board with ROS
       (e.g. `enable_imu:=true enable_range:=true enable_audio:=true enable_audio_stamped:=false enable_camera_compressed:=true enable_camera_raw:=true`), and
     - on which socket port (default `receiver_port:=8002`).
 
-    Once you run it, you will be ready for receiving the sensors data transmitted by the board, so now you can move ahead to point **[2. Arduino Nicla Vision setup](#2-arduino-nicla-vision-setup)**. 
-    
+    Once you run it, you will be ready for receiving the sensors data
+
+## Simulated board 
 - For simulating the Arduino Nicla Vision in Gazebo and Rviz:
      ```bash
     $ roslaunch nicla_vision_ros nicla_sim.launch <optional arguments>
@@ -82,21 +100,11 @@ Follow the below two steps for enjoying your Arduino Nicla Vision board with ROS
     Using the `<optional arguments>`, you can decide if to run the simulation in Gazebo or in Rviz, and which sensor to simulate (everything set to true as default).
   ![Alt Text](assets/nicla_rviz.jpg)
     
-### 2. Arduino Nicla Vision setup
-After having completed the setup steps in the [Nicla Vision Drivers repository](https://github.com/ADVRHumanoids/nicla_vision_drivers.git), just turn on your Arduino Nicla Vision. 
-When you power on your Arduino Nicla Vision, it will automatically connect to the network and it will start streaming to your ROS-running machine.
 
-**Note:** Look at the LED of your board! The first seconds (about 15 sec) after having turned it on, the LED should be Blue. When the board is correctly connected and it is streaming, the LED will turn off. If you are having connection issues, the LED will be Blue again. If during execution you see a Green LED, it is for unforseen errors. If during execution you see a Red LED, it is for memory errors (usually picture quality too high).
+## Optional Micropython Version
+**Note** this version is not supported and maintained anymore, we defitively moved to the Arduino version.  
 
-### Optional Audio Recognition with VOSK
-It is possible to run a speech recognition feature directly on this module, that will then publish the recognized words on the `/nicla/audio_recognized` topic. At the moment, [VOSK](https://alphacephei.com/vosk/) is utilized. Only Arduino version is supported.
-#### VOSK setup
-1. ```pip install vosk```
-2. Download a VOSK model https://alphacephei.com/vosk/models
-3. Check the `recognition` arguments in the ```nicla_receiver.launch``` file
-
-### Optional Micropython Version
-*TODO*
+If you want to use the micropython driver of the nicla (after setup it accordingly), simply run the `nicla_receiver.launch` with `driver_version:=micropython` as argument.
 
 # Video Demonstration
 
