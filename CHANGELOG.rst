@@ -2,8 +2,8 @@
 Changelog for package nicla_vision_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.1 (2024-07-19)
+------------------
 * license, contrib, and linting
 * Arduino version is the default
 * speech recognizer
