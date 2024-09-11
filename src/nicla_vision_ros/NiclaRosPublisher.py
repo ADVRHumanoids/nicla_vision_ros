@@ -237,25 +237,19 @@ class NiclaRosPublisher:
                 img_raw = image[1]
 
                 # PUBLISH COMPRESSED
-                if self.enable_camera_compressed:
-
+                if self.enable_camera_compressed: 
                     self.image_compressed_msg.header.stamp = (
                         rospy.Time.from_sec(image[0])
                     )
 
-                    encode_param = [int(cv2.IMWRITE_JPEG_QUALITY), 90]
-                    result, compressed_img = cv2.imencode(
-                        ".jpg", img_raw, encode_param
-                    )
-
                     try:
                         self.image_compressed_msg.data = (
-                            self.cv_bridge.cv2_to_imgmsg(
-                                compressed_img, encoding="passthrough"
+                            self.cv_bridge.cv2_to_compressed_imgmsg(
+                                img_raw, dst_format="jpg"
                             ).data
                         )
                     except CvBridgeError as e:
-                        print(e)
+                        self.get_logger().error(e)
 
                     self.image_compressed_pub.publish(
                         self.image_compressed_msg
