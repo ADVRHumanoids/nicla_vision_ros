@@ -1,0 +1,25 @@
+
+#!/usr/bin/env python
+
+import rospy
+from nicla_vision_ros import TofOnImage
+
+
+if __name__ == '__main__':
+
+    rospy.init_node("nicla_tof_on_image")
+
+    rate = rospy.Rate(100)
+
+    tof_on_image_node = TofOnImage()
+
+    while not rospy.is_shutdown():
+
+        try:
+            tof_on_image_node.run()
+
+        except Exception as e:
+            rospy.logerr(e)
+            break
+
+        rate.sleep()

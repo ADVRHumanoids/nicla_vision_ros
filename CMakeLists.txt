@@ -49,5 +49,11 @@ catkin_install_python(PROGRAMS
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
+catkin_install_python(PROGRAMS
+  scripts/tof_on_image
+  DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
+)
+
+
 
 

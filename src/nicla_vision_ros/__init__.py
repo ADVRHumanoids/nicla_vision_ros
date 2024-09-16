@@ -8,3 +8,4 @@ from nicla_vision_ros.NiclaReceiverServerMicroPy import (
     NiclaReceiverTCPMicroPy,
 )
 from nicla_vision_ros.NiclaRosPublisherMicroPy import NiclaRosPublisherMicroPy
+from nicla_vision_ros.TofOnImage import TofOnImage
