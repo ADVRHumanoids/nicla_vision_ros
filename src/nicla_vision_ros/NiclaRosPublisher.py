@@ -249,7 +249,7 @@ class NiclaRosPublisher:
                             ).data
                         )
                     except CvBridgeError as e:
-                        self.get_logger().error(e)
+                        rospy.logerr(e)
 
                     self.image_compressed_pub.publish(
                         self.image_compressed_msg
