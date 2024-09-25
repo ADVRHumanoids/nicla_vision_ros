@@ -1,0 +1,53 @@
+cff-version: 1.2.0
+message: DAGANA paper.
+authors:
+  - family-names: Del Bianco
+    given-names: Edoardo
+  - family-names: Torielli
+    given-names: Davide
+  - family-names: Rollo
+    given-names: Federico
+  - family-names: Gasperini
+    given-names: Damiano
+  - family-names: Laurenzi
+    given-names: Arturo
+  - family-names: Baccelliere
+    given-names: Lorenzo
+  - family-names: Muratore
+    given-names: Luca
+  - family-names: Roveri
+    given-names: Marco
+  - family-names: Tsagarakis
+    given-names: Nikos G.
+title: A High-Force Gripper with Embedded Multimodal Sensing for Powerful and Perception Driven Grasping
+version: 1.0.0
+doi: ''
+date-released: '2024-09-25'
+preferred-citation:
+  authors:
+    - family-names: Del Bianco
+      given-names: Edoardo
+    - family-names: Torielli
+      given-names: Davide
+    - family-names: Rollo
+      given-names: Federico
+    - family-names: Gasperini
+      given-names: Damiano
+    - family-names: Laurenzi
+      given-names: Arturo
+    - family-names: Baccelliere
+      given-names: Lorenzo
+    - family-names: Muratore
+      given-names: Luca
+    - family-names: Roveri
+      given-names: Marco
+    - family-names: Tsagarakis
+      given-names: Nikos G.
+  title: A High-Force Gripper with Embedded Multimodal Sensing for Powerful and Perception Driven Grasping
+  doi: ''
+  type: conference-paper
+  pages: ''
+  year: '2024'
+  collection-title: 2024 IEEE-RAS 23rd International Conference on Humanoid Robots (Humanoids)
+  conference: {}
+  publisher: {}
