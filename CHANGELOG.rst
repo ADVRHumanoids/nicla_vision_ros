@@ -2,6 +2,15 @@
 Changelog for package nicla_vision_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
+Forthcoming
+-----------
+* citation
+* print fix
+* tof on image util
+* Updating img compressed cv2_to_compressed_imgmsg
+* Update README.md
+* Contributors: Davide Torielli, damigas
+
 1.0.1 (2024-07-19)
 ------------------
 * license, contrib, and linting
