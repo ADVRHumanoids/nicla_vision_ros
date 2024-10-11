@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <package format="2">
   <name>nicla_vision_ros</name>
-  <version>1.0.1</version>
+  <version>1.0.2</version>
   <description>
     Integration of the Arduino Nicla Vision board in the ROS world. 
     Sensors data from the Nicla Vision is collected and trasmited to the relevant ROS topics

@@ -2,8 +2,8 @@
 Changelog for package nicla_vision_ros
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
-Forthcoming
------------
+1.0.2 (2024-10-11)
+------------------
 * citation
 * print fix
 * tof on image util
