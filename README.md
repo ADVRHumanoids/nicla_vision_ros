@@ -124,6 +124,9 @@ Here some useful links:
 # License
 Distributed under the Apache-2.0 License. See LICENSE for more information.
 
+# ROSCon24 Talk
+https://vimeo.com/1026030054
+
 # Citation 
 :raised_hands: If you use this work or take inspiration from it, please cite (to be published):
 ```bibtex
