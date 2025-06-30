@@ -125,7 +125,8 @@ Here some useful links:
 Distributed under the Apache-2.0 License. See LICENSE for more information.
 
 # ROSCon24 Talk
-https://vimeo.com/1026030054
+- Video https://vimeo.com/1026030054
+- Slides https://roscon.ros.org/2024/talks/Unlocking_the_Potential_of_the_Nicla_Vision_Board_with_ROS-ROS2.pdf
 
 # Citation 
 :raised_hands: If you use this work or take inspiration from it, please cite (to be published):
