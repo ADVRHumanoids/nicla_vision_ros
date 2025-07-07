@@ -10,7 +10,7 @@ from audio_common_msgs.msg import AudioData, AudioDataStamped, AudioInfo
 from cv_bridge import CvBridge, CvBridgeError
 import cv2
 
-from nicla_vision_ros import NiclaReceiverUDP, NiclaReceiverTCP
+from nicla_vision_ros import NiclaReceiverUDP, NiclaReceiverTCP, NiclaReceiverSerial
 
 
 class NiclaRosPublisher:
@@ -26,11 +26,15 @@ class NiclaRosPublisher:
         ip = rospy.get_param("~receiver_ip")
         port = rospy.get_param("~receiver_port", "8002")
         connection_type = rospy.get_param("~connection_type", "udp")
+        baudrate = rospy.get_param("~baudrate", 0)
 
         self.enable_range = rospy.get_param("~enable_range", True)
         self.enable_camera_raw = rospy.get_param("~enable_camera_raw", True)
         self.enable_camera_compressed = rospy.get_param(
             "~enable_camera_compressed", False
+        )
+        self.camera_receive_compressed = rospy.get_param(
+            "~camera_receive_compressed", False
         )
         self.enable_audio = rospy.get_param("~enable_audio", True)
         self.enable_audio_stamped = rospy.get_param(
@@ -184,6 +188,17 @@ class NiclaRosPublisher:
                 enable_range=self.enable_range,
                 enable_image=self.enable_camera_raw
                 or self.enable_camera_compressed,
+                enable_audio=self.enable_audio or self.enable_audio_stamped,
+                enable_imu=self.enable_imu,
+            )
+        elif connection_type == "serial":
+            self.nicla_receiver_server = NiclaReceiverSerial(
+                port=port,
+                baudrate=baudrate,
+                enable_range=self.enable_range,
+                enable_image=self.enable_camera_raw
+                or self.enable_camera_compressed,
+                camera_receive_compressed=self.camera_receive_compressed,
                 enable_audio=self.enable_audio or self.enable_audio_stamped,
                 enable_imu=self.enable_imu,
             )

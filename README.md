@@ -11,7 +11,7 @@
 
 This ROS package enables the [Arduino Nicla Vision](https://docs.arduino.cc/hardware/nicla-vision/) board to be ready-to-use in the ROS world! :boom:
 
-The implemented architecture is described in the above image: the Arduino Nicla Vision board streams the sensors data to a ROS-running machine through TCP/UDP socket. This package will be running on the ROS-running machine, allowing to deserialize the received info, and stream it in the corresponding ROS topics 
+The implemented architecture is described in the above image: the Arduino Nicla Vision board streams the sensors data to a ROS-running machine through TCP/UDP socket or Serial, i.e. UART over the USB cable. This package will be running on the ROS-running machine, allowing to deserialize the received info, and stream it in the corresponding ROS topics 
 
 Here a list of the available sensors with their respective ROS topics:
 - **2MP color camera** streams on
@@ -76,21 +76,23 @@ Follow the below steps for enjoying your Arduino Nicla Vision board with ROS!
 ## Run the ROS package
 -  Launch the package:
     ```bash
-    $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" connection_type:="tcp/udp" <optional arguments>
+    $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" connection_type:="tcp/udp/serial" <optional arguments>
     ```
+    - Set the socket type to be used, either TCP or UDP (`connection_type:=tcp`, `udp`, or `serial`).
+
     - Set the `receiver_ip` with the IP address of your ROS-running machine.
         You can get this IP address by executing the following command:
         ```bash
         $ ifconfig
         ```
-        and taking the "inet" address under the "enp" voice.
-    - Set the socket type to be used, either TCP or UDP (`connection_type:="tcp"` or `"udp"`).
+        and taking the "inet" address under the "enp" voice. *Note* argument is ignored if `connection_type:="tcp/udp/serial`
     
     Furthermore, using the `<optional arguments>`, you can decide:
     - which sensor to be streamed in ROS
-
-      (e.g. `enable_imu:=true enable_range:=true enable_audio:=true enable_audio_stamped:=false enable_camera_compressed:=true enable_camera_raw:=true`), and
-    - on which socket port (default `receiver_port:=8002`).
+      (e.g. `enable_imu:=true enable_range:=true enable_audio:=true enable_audio_stamped:=false enable_camera_compressed:=true enable_camera_raw:=true`),
+      with Serial connection, set `camera_receive_compressed` according to how nicla is sending images (COMPRESS_IMAGE)
+    
+    - on which socket port (default `receiver_port:=8002`). For Serial connection, `receiver_port` argument is used to specify the port used by the board (e.g. `receiver_port:=/dev/ttyACM0`)
 
     Once you run it, you will be ready for receiving the sensors data
 
@@ -137,7 +139,7 @@ https://vimeo.com/1026030054
   year={2024},
   volume={},
   number={},
-  pages={},
-  doi={}
+  pages={149-156},
+  doi={10.1109/Humanoids58906.2024.10769951}
 }
 ```

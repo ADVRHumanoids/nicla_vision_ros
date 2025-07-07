@@ -2,17 +2,19 @@
 <launch>
 
     <arg name="nicla_name" default="nicla" />
-    <arg name="receiver_ip"/>
-    <arg name="receiver_port" default="8002" />
-    <arg name="connection_type"/> <!-- tcp, udp -->
-    <arg name="driver_version" default="arduino"/> <!-- arduino, micropy -->
+    <arg name="receiver_ip" doc="ignored for serial connection"/>
+    <arg name="receiver_port" default="8002" doc="For serial connection, something like '/dev/ttaACM0'"/>
+    <arg name="connection_type" doc="tcp, udp, or serial. Serial with micropy not implemented"/>
+    <arg name="driver_version" default="arduino" doc="arduino, micropy"/>
+    <arg name="baudrate" default="500000" doc="Baudrate for serial connection, ignored for tcp/udp connections"/>
 
     <arg name="enable_range" default="true" />
 
-    <arg name="enable_camera_raw" default="false" />
-    <arg name="enable_camera_compressed" default="true" />
+    <arg name="enable_camera_raw" default="false" doc="Publish image in the '*/image_raw' topic "/>
+    <arg name="enable_camera_compressed" default="true" doc="Publish image in the '*/compressed' topic "/>
+    <arg name="camera_receive_compressed" default="false" doc="Set according to COMPRESS_IMAGE arg of the nicla driver. Ignored for TCP and UDP connections" />
 
-    <arg name="enable_audio" default="true" />
+    <arg name="enable_audio" default="false" />
     <arg name="enable_audio_stamped" default="false" />
     <arg name="enable_audio_recognition_vosk" default="false" doc="Enable speech recognition with VOSK (need to be installed)"/>
     <arg name="audio_recognition_model_path" default=""/>
@@ -33,10 +35,12 @@
         <param name="receiver_port" value="$(arg receiver_port)" />
         <param name="connection_type" value="$(arg connection_type)" />
         <param name="driver_version" value="$(arg driver_version)" />
+        <param name="baudrate" value="$(arg baudrate)" />
 
         <param name="enable_range" value="$(arg enable_range)" />
         <param name="enable_camera_raw" value="$(arg enable_camera_raw)" />
         <param name="enable_camera_compressed" value="$(arg enable_camera_compressed)" />
+        <param name="camera_receive_compressed" value="$(arg camera_receive_compressed)" />
         <param name="enable_audio" value="$(arg enable_audio)" />
         <param name="enable_audio_stamped" value="$(arg enable_audio_stamped)" />
         <param name="enable_audio_recognition_vosk" value="$(arg enable_audio_recognition_vosk)" />
