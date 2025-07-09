@@ -36,6 +36,15 @@ class NiclaRosPublisher:
         self.camera_receive_compressed = rospy.get_param(
             "~camera_receive_compressed", False
         )
+        self.camera_pixel_format = rospy.get_param(
+            "~camera_pixel_format", "rgb565"
+        )
+        self.camera_width = rospy.get_param(
+            "~camera_width", 320
+        )
+        self.camera_height = rospy.get_param(
+            "~camera_height", 240
+        )
         self.enable_audio = rospy.get_param("~enable_audio", True)
         self.enable_audio_stamped = rospy.get_param(
             "~enable_audio_stamped", False
@@ -96,9 +105,10 @@ class NiclaRosPublisher:
             camera_info_topic = nicla_name + "/camera/camera_info"
             self.camera_info_msg = CameraInfo()
             self.camera_info_msg.header.frame_id = nicla_name + "_camera"
-            self.camera_info_msg.height = 240
-            self.camera_info_msg.width = 320
+            self.camera_info_msg.height = self.camera_height
+            self.camera_info_msg.width = self.camera_width 
             self.camera_info_msg.distortion_model = "plumb_rob"
+            #WARNING: this calibration consider 320x240 resolution with RGB565 pixel format
             self.camera_info_msg.K = [
                 416.650528,
                 0.000000,
@@ -199,6 +209,9 @@ class NiclaRosPublisher:
                 enable_image=self.enable_camera_raw
                 or self.enable_camera_compressed,
                 camera_receive_compressed=self.camera_receive_compressed,
+                camera_pixel_format = self.camera_pixel_format,
+                camera_width = self.camera_width,
+                camera_height = self.camera_height,
                 enable_audio=self.enable_audio or self.enable_audio_stamped,
                 enable_imu=self.enable_imu,
             )

@@ -37,6 +37,9 @@ class NiclaReceiverSerial(serial.Serial):
         enable_range=False,
         enable_image=False,
         camera_receive_compressed=False,
+        camera_pixel_format='rgb565',
+        camera_height = 240,
+        camera_width = 320,
         enable_audio=False,
         enable_imu=False
     ):
@@ -47,6 +50,9 @@ class NiclaReceiverSerial(serial.Serial):
         self.enable_range = enable_range
         self.enable_image = enable_image
         self.camera_receive_compressed = camera_receive_compressed
+        self.camera_pixel_format = camera_pixel_format
+        self.camera_height = camera_height
+        self.camera_width = camera_width
         self.enable_audio = enable_audio
         self.enable_imu = enable_imu
 
@@ -188,16 +194,25 @@ class NiclaReceiverSerial(serial.Serial):
 
                     else: #not compressed image 
                         #rgb565_to_rgb888, with red and blue swap for the niclarospublisher using bgr
-                        pixels = np.frombuffer(data, dtype=">u2").reshape((240, 320)) #big-endian unsigned 16-bit integer
-                        b = ((pixels >> 11) & 0x1F) << 3
-                        g = ((pixels >> 5) & 0x3F) << 2
-                        r = (pixels & 0x1F) << 3
-                        image = np.stack((r, g, b), axis=-1).astype(np.uint8)
+                        if self.camera_pixel_format == 'rgb565':
+                            pixels = np.frombuffer(data, dtype=">u2").reshape((self.camera_height, self.camera_width)) #big-endian unsigned 16-bit integer
+                            b = ((pixels >> 11) & 0x1F) << 3
+                            g = ((pixels >> 5) & 0x3F) << 2
+                            r = (pixels & 0x1F) << 3
+                            image = np.stack((r, g, b), axis=-1).astype(np.uint8)
 
+                        #From Bayer RGB
+                        elif self.camera_pixel_format == 'bayer':
+                            pixels = np.frombuffer(data, dtype=np.uint8).reshape((self.camera_height, self.camera_width))
+                            image = cv2.cvtColor(pixels, cv2.COLOR_BayerGBRG2BGR)
+                        
+                        else :
+                            raise(f'Pixel format {self.camera_pixel_format} not available')
+                        
                         #### DEBUGS
                         # Shift the image data by one pixel to the right
                         # data_shifted = data[1:] + data[:1]
-                        # pixels_shifted = np.frombuffer(data_shifted, dtype=">u2").reshape((240, 320)) #big-endian unsigned 16-bit integer
+                        # pixels_shifted = np.frombuffer(data_shifted, dtype=">u2").reshape((self.camera_height, self.camera_width)) #big-endian unsigned 16-bit integer
 
                         # def rgb565_to_rgb888(pixels):
                         #     r = ((pixels >> 11) & 0x1F) << 3

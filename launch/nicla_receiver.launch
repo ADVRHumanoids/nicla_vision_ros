@@ -12,7 +12,10 @@
 
     <arg name="enable_camera_raw" default="false" doc="Publish image in the '*/image_raw' topic "/>
     <arg name="enable_camera_compressed" default="true" doc="Publish image in the '*/compressed' topic "/>
-    <arg name="camera_receive_compressed" default="false" doc="Set according to COMPRESS_IMAGE arg of the nicla driver. Ignored for TCP and UDP connections" />
+    <arg name="camera_receive_compressed" default="false" doc="Set according to COMPRESS_IMAGE arg of the nicla driver. Ignored for TCP and UDP connections. Keep false if bayer pixel format" />
+    <arg name="camera_pixel_format" default="rgb565" doc="'rgb565' or 'bayer'. Set according to CAM_PIXFORMAT arg of the nicla driver. Ignored for TCP and UDP connections. Use default if camera_receive_compressed" />
+    <arg name="camera_width" default="320" doc="Set according to CAM_RES arg of the nicla driver. Ignored for TCP and UDP connections. Use default if rgb565" />
+    <arg name="camera_height" default="240" doc="Set according to CAM_RES arg of the nicla driver. Ignored for TCP and UDP connections. Use default if rgb565" />
 
     <arg name="enable_audio" default="false" />
     <arg name="enable_audio_stamped" default="false" />
@@ -41,6 +44,9 @@
         <param name="enable_camera_raw" value="$(arg enable_camera_raw)" />
         <param name="enable_camera_compressed" value="$(arg enable_camera_compressed)" />
         <param name="camera_receive_compressed" value="$(arg camera_receive_compressed)" />
+        <param name="camera_pixel_format" value="$(arg camera_pixel_format)" />
+        <param name="camera_width" value="$(arg camera_width)" />
+        <param name="camera_height" value="$(arg camera_height)" />
         <param name="enable_audio" value="$(arg enable_audio)" />
         <param name="enable_audio_stamped" value="$(arg enable_audio_stamped)" />
         <param name="enable_audio_recognition_vosk" value="$(arg enable_audio_recognition_vosk)" />
