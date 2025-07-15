@@ -52,8 +52,8 @@ class NiclaRosPublisher:
         self.enable_audio_recognition_vosk = rospy.get_param(
             "~enable_audio_recognition_vosk", False
         )
-        self.audio_recognition_model_path = rospy.get_param(
-            "~audio_recognition_model_path", ""
+        self.audio_recognition_model = rospy.get_param(
+            "~audio_recognition_model", ""
         )
         self.audio_recognition_grammar = rospy.get_param(
             "~audio_recognition_grammar", ""
@@ -221,16 +221,16 @@ class NiclaRosPublisher:
             raise Exception("Connection type not known")
 
         if self.enable_audio_recognition_vosk:
-            if not self.audio_recognition_model_path:
+            if not self.audio_recognition_model:
                 rospy.logerr(
-                    "Path for VOSK recognizer model is an empty string! Please provide 'audio_recognition_model_path' arg"
+                    "Path for VOSK recognizer model is an empty string! Please provide 'audio_recognition_model_path' and 'audio_recognition_model_name' args"
                 )
                 exit()
 
             from nicla_vision_ros import SpeechRecognizer
 
             self.speech_recognizer = SpeechRecognizer.SpeechRecognizer(
-                self.audio_recognition_model_path,
+                self.audio_recognition_model,
                 self.audio_recognition_grammar,
                 self.audio_recognition_listen_seconds,
                 self.audio_recognition_wave_output_filename,

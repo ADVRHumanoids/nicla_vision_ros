@@ -20,7 +20,8 @@
     <arg name="enable_audio" default="false" />
     <arg name="enable_audio_stamped" default="false" />
     <arg name="enable_audio_recognition_vosk" default="false" doc="Enable speech recognition with VOSK (need to be installed)"/>
-    <arg name="audio_recognition_model_path" default=""/>
+    <arg name="audio_recognition_model_path" default="$(find nicla_vision_ros)/vosk_models"/>
+    <arg name="audio_recognition_model_name" default="vosk-model-small-en-us-0.15"/>
     <arg name="audio_recognition_listen_seconds" default="2" doc="The speech recognition will process audio blocks of this duration"/>
     <arg name="audio_recognition_grammar" default='[]' 
         doc='VOSK format for grammar, [] to use default model graph 
@@ -50,7 +51,7 @@
         <param name="enable_audio" value="$(arg enable_audio)" />
         <param name="enable_audio_stamped" value="$(arg enable_audio_stamped)" />
         <param name="enable_audio_recognition_vosk" value="$(arg enable_audio_recognition_vosk)" />
-        <param name="audio_recognition_model_path" value="$(arg audio_recognition_model_path)" />
+        <param name="audio_recognition_model" value="$(arg audio_recognition_model_path)/$(arg audio_recognition_model_name)" />
         <param name="audio_recognition_listen_seconds" value="$(arg audio_recognition_listen_seconds)" />
         <param name="audio_recognition_grammar" value="$(arg audio_recognition_grammar)" />
         <param name="audio_recognition_wave_output_filename" value="$(arg audio_recognition_wave_output_filename)" />
