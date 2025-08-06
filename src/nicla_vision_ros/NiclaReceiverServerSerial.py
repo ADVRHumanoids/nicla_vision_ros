@@ -232,6 +232,7 @@ class NiclaReceiverSerial(serial.Serial):
                             (timestamp, image)
                         )
                     except queue.Full:
+                        print(f"Image queue full! overwriting oldest image")
                         self.image_buffer.get()
                         self.image_buffer.put_nowait(
                             (timestamp, image)

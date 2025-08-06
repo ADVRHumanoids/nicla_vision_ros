@@ -29,6 +29,7 @@ class SpeechRecognizer:
 
         self.audio_buffer = np.array([], dtype="int16")
         if self.WAVE_OUTPUT_FILENAME:
+            print(f'Speech recognizer saving wav files for debug')
             self.recording_frames = []  # Added for storing audio frames
 
         self.model = Model(vosk_model_path)

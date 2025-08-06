@@ -45,6 +45,9 @@ class NiclaRosPublisher:
         self.camera_height = rospy.get_param(
             "~camera_height", 240
         )
+        self.camera_img_rotate_code = rospy.get_param(
+            "~camera_img_rotate_code", 0
+        )
         self.enable_audio = rospy.get_param("~enable_audio", True)
         self.enable_audio_stamped = rospy.get_param(
             "~enable_audio_stamped", False
@@ -141,6 +144,13 @@ class NiclaRosPublisher:
                 1.000000,
                 0.000000,
             ]
+            #320x320 computed from 320x240 and chatgpt (a newer calib may be necessary)
+            if (self.camera_height == 320) and (self.camera_width) == 320: 
+                self.camera_info_msg.K[2] = 160.0
+                self.camera_info_msg.K[5] = 160.0
+                self.camera_info_msg.P[2] = 160.0
+                self.camera_info_msg.P[6] = 160.0
+
             self.camera_info_pub = rospy.Publisher(
                 camera_info_topic, CameraInfo, queue_size=5
             )
@@ -263,6 +273,9 @@ class NiclaRosPublisher:
                 self.camera_info_pub.publish(self.camera_info_msg)
 
                 img_raw = image[1]
+
+                if (self.camera_img_rotate_code != 0):
+                    img_raw = cv2.rotate(img_raw, self.camera_img_rotate_code-1)
 
                 # PUBLISH COMPRESSED
                 if self.enable_camera_compressed: 
