@@ -36,6 +36,12 @@ Distortion coefficients D (OpenCV plumb_bob model):
 <xacro:arg name="nicla_camera_P_fy" default="426.438812"/>
 <xacro:arg name="nicla_camera_P_cx" default="168.731782"/>
 <xacro:arg name="nicla_camera_P_cy" default="102.665989"/>
+<!-- plumb_bob (Brown–Conrady) -->
+<xacro:arg name="nicla_camera_D_k1" default="0.176808"/>
+<xacro:arg name="nicla_camera_D_k2" default="-0.590488"/>
+<xacro:arg name="nicla_camera_D_t1" default="-0.008412"/>
+<xacro:arg name="nicla_camera_D_t2" default="0.015473"/>
+<xacro:arg name="nicla_camera_D_k3" default="0.0"/>
 <!-- ###################### CAM PARAMS ########################################### -->
 
 <xacro:arg name="nicla_tof" default="true"/>
@@ -49,14 +55,19 @@ Distortion coefficients D (OpenCV plumb_bob model):
 <xacro:property name="NICLA_CAMERA_WIDTH" value="$(arg nicla_camera_width)" />
 <xacro:property name="NICLA_CAMERA_HEIGHT" value="$(arg nicla_camera_height)" />
 <xacro:property name="NICLA_CAMERA_HZ" value="$(arg nicla_camera_hz)" />
-<xacro:property name="NICLA_CAMERA_K_fx" value="$(arg nicla_camera_K_fx)" />
-<xacro:property name="NICLA_CAMERA_K_fy" value="$(arg nicla_camera_K_fy)" />
-<xacro:property name="NICLA_CAMERA_K_cx" value="$(arg nicla_camera_K_cx)" />
-<xacro:property name="NICLA_CAMERA_K_cy" value="$(arg nicla_camera_K_cy)" />
-<xacro:property name="NICLA_CAMERA_P_fx" value="$(arg nicla_camera_P_fx)" />
-<xacro:property name="NICLA_CAMERA_P_fy" value="$(arg nicla_camera_P_fy)" />
-<xacro:property name="NICLA_CAMERA_P_cx" value="$(arg nicla_camera_P_cx)" />
-<xacro:property name="NICLA_CAMERA_P_cy" value="$(arg nicla_camera_P_cy)" />
+<xacro:property name="NICLA_CAMERA_K_FX" value="$(arg nicla_camera_K_fx)" />
+<xacro:property name="NICLA_CAMERA_K_FY" value="$(arg nicla_camera_K_fy)" />
+<xacro:property name="NICLA_CAMERA_K_CX" value="$(arg nicla_camera_K_cx)" />
+<xacro:property name="NICLA_CAMERA_K_CY" value="$(arg nicla_camera_K_cy)" />
+<xacro:property name="NICLA_CAMERA_P_FX" value="$(arg nicla_camera_P_fx)" />
+<xacro:property name="NICLA_CAMERA_P_FY" value="$(arg nicla_camera_P_fy)" />
+<xacro:property name="NICLA_CAMERA_P_CX" value="$(arg nicla_camera_P_cx)" />
+<xacro:property name="NICLA_CAMERA_P_CY" value="$(arg nicla_camera_P_cy)" />
+<xacro:property name="NICLA_CAMERA_D_K1" value="$(arg nicla_camera_D_k1)" />
+<xacro:property name="NICLA_CAMERA_D_K2" value="$(arg nicla_camera_D_k2)" />
+<xacro:property name="NICLA_CAMERA_D_T1" value="$(arg nicla_camera_D_t1)" />
+<xacro:property name="NICLA_CAMERA_D_T2" value="$(arg nicla_camera_D_t2)" />
+<xacro:property name="NICLA_CAMERA_D_K3" value="$(arg nicla_camera_D_k3)" />
 <xacro:property name="NICLA_TOF" value="$(arg nicla_tof)" />
 <xacro:property name="nicla_tof_visualize" value="$(arg nicla_tof_visualize)" />
 <xacro:property name="NICLA_MIC" value="$(arg nicla_mic)" />
@@ -125,6 +136,7 @@ Distortion coefficients D (OpenCV plumb_bob model):
         <update_rate>${NICLA_CAMERA_HZ}</update_rate>
         <camera name="${name}_camera_gz">
             <horizontal_fov>0.69813</horizontal_fov>  <!-- 80deg 1.39626rad-->
+            <optical_frame_id>${name}_camera</optical_frame_id>
             <image>
                 <width>${NICLA_CAMERA_WIDTH}</width>
                 <height>${NICLA_CAMERA_HEIGHT}</height>
@@ -144,21 +156,18 @@ Distortion coefficients D (OpenCV plumb_bob model):
             </distortion>
             <lens>
                 <projection>
-                    <p_fx>${NICLA_CAMERA_P_fx}</p_fx>
-                    <p_fy>${NICLA_CAMERA_P_fy}</p_fy>
-                    <p_cx>${NICLA_CAMERA_P_cx}</p_cx>
-                    <p_cy>${NICLA_CAMERA_P_cy}</p_cy>
+                    <p_fx>${NICLA_CAMERA_P_FX}</p_fx>
+                    <p_fy>${NICLA_CAMERA_P_FY}</p_fy>
+                    <p_cx>${NICLA_CAMERA_P_CX}</p_cx>
+                    <p_cy>${NICLA_CAMERA_P_CY}</p_cy>
                     <tx>0</tx>
                     <ty>0</ty>
                 </projection>
                 <intrinsics>
-                    <!-- fx = fy = width / ( 2 * tan (hfov / 2 ) ) -->
-                    <fx>${NICLA_CAMERA_K_fx}</fx>
-                    <fy>${NICLA_CAMERA_K_fy}</fy>
-                    <!-- cx = ( width + 1 ) / 2 -->
-                    <cx>${NICLA_CAMERA_K_cx}</cx>
-                    <!-- cy = ( height + 1 ) / 2 -->
-                    <cy>${NICLA_CAMERA_K_cy}</cy>
+                    <fx>${NICLA_CAMERA_K_FX}</fx>
+                    <fy>${NICLA_CAMERA_K_FY}</fy>
+                    <cx>${NICLA_CAMERA_K_CX}</cx>
+                    <cy>${NICLA_CAMERA_K_CY}</cy>
                     <s>0</s>
                 </intrinsics>
             </lens>
@@ -169,30 +178,21 @@ Distortion coefficients D (OpenCV plumb_bob model):
             <cameraName>${name}/camera</cameraName>
             <imageTopicName>image_raw</imageTopicName>
             <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+            <!-- NOTE While the above params are necessary for simulating in gazebo, putting the values also here
+            is necessary to populate correctly the camera info msg, see https://github.com/ros-simulation/gazebo_ros_pkgs/blob/cd9cc952402375be5f274f39b29399c4087aa839/gazebo_plugins/src/gazebo_ros_camera_utils.cpp#L577-->
             <!-- Cam Info and camera image MUST use the ros convention (z forward, x right), so
             frame here is ${name}_camera (i.e. the "optical") and NOT ${name}_camera_gz -->
             <frameName>${name}_camera</frameName>
-            <!-- Set to 0.0 -->
-            <!-- <hackBaseline>0.0</hackBaseline>  -->
-            <!-- Set to your k1 value -->
-            <!-- <distortionK1>0.176808</distortionK1>  -->
-            <!-- Set to your k2 value -->
-            <!-- <distortionK2>-0.590488</distortionK2>  -->
-            <!-- Set to your k3 value -->
-            <!-- <distortionK3>0.0</distortionK3>  -->
-            <!-- Set to your p1 value -->
-            <!-- <distortionT1>-0.008412</distortionT1>  -->
-            <!-- Set to your p2 value -->
-            <!-- <distortionT2>0.015473</distortionT2>  -->
-            <!-- Set to 0 -->
-            <!-- <CxPrime>166.12451</CxPrime>  -->
-            <!-- Set to your Cx value -->
-            <!-- <Cx>166.12451</Cx>  -->
-            <!-- Set to your Cy value -->
-            <!-- <Cy>104.41054</Cy>  -->
-            <!-- Set to your focal length value--> 
-            <!-- <focalLength>439.597550</focalLength>  -->
-  
+            <hackBaseline>0.0</hackBaseline>  <!-- this is multiplied by focal lenght to obtain P[3] -->
+            <distortionK1>${NICLA_CAMERA_D_K1}</distortionK1>
+            <distortionK2>${NICLA_CAMERA_D_K2}</distortionK2>
+            <distortionT1>${NICLA_CAMERA_D_T1}</distortionT1>
+            <distortionT2>${NICLA_CAMERA_D_T2}</distortionT2>
+            <distortionK3>${NICLA_CAMERA_D_K3}</distortionK3>
+            <Cx>${NICLA_CAMERA_K_CX}</Cx>
+            <Cy>${NICLA_CAMERA_K_CY}</Cy>
+            <!-- there is only one element for K_fx K_fy P_fx P_fy, lets just put one of them -->
+            <focalLength>${NICLA_CAMERA_K_FX}</focalLength>
         </plugin>
         </sensor>
         </gazebo>
