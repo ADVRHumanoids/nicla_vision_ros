@@ -133,67 +133,67 @@ Distortion coefficients D (OpenCV plumb_bob model):
         <!-- gazebo simulated camera -->
         <gazebo reference="${name}_camera_gz">
         <sensor type="camera" name="${name}_camera_gz">
-        <update_rate>${NICLA_CAMERA_HZ}</update_rate>
-        <camera name="${name}_camera_gz">
-            <horizontal_fov>0.69813</horizontal_fov>  <!-- 80deg 1.39626rad-->
-            <optical_frame_id>${name}_camera</optical_frame_id>
-            <image>
-                <width>${NICLA_CAMERA_WIDTH}</width>
-                <height>${NICLA_CAMERA_HEIGHT}</height>
-                <format>R8G8B8</format>
-            </image>
-            <clip>
-                <near>0.1</near>
-                <far>100</far>
-            </clip>
-            <distortion>
-                <k1>0.176808</k1>
-                <k2>-0.590488</k2>
-                <k3>0.0</k3>
-                <p1>-0.008412</p1>
-                <p2>0.015473</p2>
-                <center>0.5 0.5</center>
-            </distortion>
-            <lens>
-                <projection>
-                    <p_fx>${NICLA_CAMERA_P_FX}</p_fx>
-                    <p_fy>${NICLA_CAMERA_P_FY}</p_fy>
-                    <p_cx>${NICLA_CAMERA_P_CX}</p_cx>
-                    <p_cy>${NICLA_CAMERA_P_CY}</p_cy>
-                    <tx>0</tx>
-                    <ty>0</ty>
-                </projection>
-                <intrinsics>
-                    <fx>${NICLA_CAMERA_K_FX}</fx>
-                    <fy>${NICLA_CAMERA_K_FY}</fy>
-                    <cx>${NICLA_CAMERA_K_CX}</cx>
-                    <cy>${NICLA_CAMERA_K_CY}</cy>
-                    <s>0</s>
-                </intrinsics>
-            </lens>
-        </camera>
-        <plugin name="gazebo_ros_${name}_camera_controller" filename="libgazebo_ros_camera.so">
-            <alwaysOn>true</alwaysOn>
-            <updateRate>${NICLA_CAMERA_HZ}</updateRate>
-            <cameraName>${name}/camera</cameraName>
-            <imageTopicName>image_raw</imageTopicName>
-            <cameraInfoTopicName>camera_info</cameraInfoTopicName>
-            <!-- NOTE While the above params are necessary for simulating in gazebo, putting the values also here
-            is necessary to populate correctly the camera info msg, see https://github.com/ros-simulation/gazebo_ros_pkgs/blob/cd9cc952402375be5f274f39b29399c4087aa839/gazebo_plugins/src/gazebo_ros_camera_utils.cpp#L577-->
-            <!-- Cam Info and camera image MUST use the ros convention (z forward, x right), so
-            frame here is ${name}_camera (i.e. the "optical") and NOT ${name}_camera_gz -->
-            <frameName>${name}_camera</frameName>
-            <hackBaseline>0.0</hackBaseline>  <!-- this is multiplied by focal lenght to obtain P[3] -->
-            <distortionK1>${NICLA_CAMERA_D_K1}</distortionK1>
-            <distortionK2>${NICLA_CAMERA_D_K2}</distortionK2>
-            <distortionT1>${NICLA_CAMERA_D_T1}</distortionT1>
-            <distortionT2>${NICLA_CAMERA_D_T2}</distortionT2>
-            <distortionK3>${NICLA_CAMERA_D_K3}</distortionK3>
-            <Cx>${NICLA_CAMERA_K_CX}</Cx>
-            <Cy>${NICLA_CAMERA_K_CY}</Cy>
-            <!-- there is only one element for K_fx K_fy P_fx P_fy, lets just put one of them -->
-            <focalLength>${NICLA_CAMERA_K_FX}</focalLength>
-        </plugin>
+            <update_rate>${NICLA_CAMERA_HZ}</update_rate>
+            <camera name="${name}_camera_gz">
+                <horizontal_fov>0.69813</horizontal_fov>  <!-- 80deg 1.39626rad-->
+                <optical_frame_id>${name}_camera</optical_frame_id>
+                <image>
+                    <width>${NICLA_CAMERA_WIDTH}</width>
+                    <height>${NICLA_CAMERA_HEIGHT}</height>
+                    <format>R8G8B8</format>
+                </image>
+                <clip>
+                    <near>0.1</near>
+                    <far>100</far>
+                </clip>
+                <distortion>
+                    <k1>0.176808</k1>
+                    <k2>-0.590488</k2>
+                    <k3>0.0</k3>
+                    <p1>-0.008412</p1>
+                    <p2>0.015473</p2>
+                    <center>0.5 0.5</center>
+                </distortion>
+                <lens>
+                    <projection>
+                        <p_fx>${NICLA_CAMERA_P_FX}</p_fx>
+                        <p_fy>${NICLA_CAMERA_P_FY}</p_fy>
+                        <p_cx>${NICLA_CAMERA_P_CX}</p_cx>
+                        <p_cy>${NICLA_CAMERA_P_CY}</p_cy>
+                        <tx>0</tx>
+                        <ty>0</ty>
+                    </projection>
+                    <intrinsics>
+                        <fx>${NICLA_CAMERA_K_FX}</fx>
+                        <fy>${NICLA_CAMERA_K_FY}</fy>
+                        <cx>${NICLA_CAMERA_K_CX}</cx>
+                        <cy>${NICLA_CAMERA_K_CY}</cy>
+                        <s>0</s>
+                    </intrinsics>
+                </lens>
+            </camera>
+            <plugin name="gazebo_ros_${name}_camera_controller" filename="libgazebo_ros_camera.so">
+                <alwaysOn>true</alwaysOn>
+                <updateRate>${NICLA_CAMERA_HZ}</updateRate>
+                <cameraName>${name}/camera</cameraName>
+                <imageTopicName>image_raw</imageTopicName>
+                <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+                <!-- NOTE While the above params are necessary for simulating in gazebo, putting the values also here
+                is necessary to populate correctly the camera info msg, see https://github.com/ros-simulation/gazebo_ros_pkgs/blob/cd9cc952402375be5f274f39b29399c4087aa839/gazebo_plugins/src/gazebo_ros_camera_utils.cpp#L577-->
+                <!-- Cam Info and camera image MUST use the ros convention (z forward, x right), so
+                frame here is ${name}_camera (i.e. the "optical") and NOT ${name}_camera_gz -->
+                <frameName>${name}_camera</frameName>
+                <hackBaseline>0.0</hackBaseline>  <!-- this is multiplied by focal lenght to obtain P[3] -->
+                <distortionK1>${NICLA_CAMERA_D_K1}</distortionK1>
+                <distortionK2>${NICLA_CAMERA_D_K2}</distortionK2>
+                <distortionT1>${NICLA_CAMERA_D_T1}</distortionT1>
+                <distortionT2>${NICLA_CAMERA_D_T2}</distortionT2>
+                <distortionK3>${NICLA_CAMERA_D_K3}</distortionK3>
+                <Cx>${NICLA_CAMERA_K_CX}</Cx>
+                <Cy>${NICLA_CAMERA_K_CY}</Cy>
+                <!-- there is only one element for K_fx K_fy P_fx P_fy, lets just put one of them -->
+                <focalLength>${NICLA_CAMERA_K_FX}</focalLength>
+            </plugin>
         </sensor>
         </gazebo>
 
