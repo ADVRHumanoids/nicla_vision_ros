@@ -2,6 +2,42 @@
 <robot xmlns:xacro="http://ros.org/wiki/xacro">
 
 <xacro:arg name="nicla_camera" default="true"/>
+<!-- ###################### CAM PARAMS ####################################
+DEFAULT CONSIDER 320x240 resolution. Distorsion should not be influenced by resolution.
+according to chagpt, for 320x320 add +40 to P_cy and K_cy
+Camera matrix K: 
+                [fx, 0., cx,
+                    0., fy, cy,
+                    0., 0.,  1.] =
+
+[416.65053,   0.     , 166.12451,
+    0.     , 419.40464, 104.41054,
+    0.     ,   0.     ,   1.     ]
+
+Note: 
+- ideally fx == fy
+- ideally focalLenght = fx = fy
+- focalLength = fx+fy/2 = 418.027585 
+    but focalLength MUST be img_width/(2.0*(tan(HFOV/2.0))) = 439.597550
+
+Distortion coefficients D (OpenCV plumb_bob model):
+[k1,k2,t1,t2,k3]=[0.176808, -0.590488, -0.008412, 0.015473, 0.000000] -->
+<xacro:arg name="nicla_camera_width" default="320"/>
+<xacro:arg name="nicla_camera_height" default="240"/>
+<xacro:arg name="nicla_camera_hz" default="30.0"/>
+<!-- fx = fy = width / ( 2 * tan (hfov / 2 ) ) -->
+<xacro:arg name="nicla_camera_K_fx" default="416.65053"/>
+<xacro:arg name="nicla_camera_K_fy" default="419.40464"/>
+<!-- cx = ( width + 1 ) / 2 -->
+<xacro:arg name="nicla_camera_K_cx" default="166.12451"/>
+<!-- cy = ( height + 1 ) / 2 -->
+<xacro:arg name="nicla_camera_K_cy" default="104.41054"/>
+<xacro:arg name="nicla_camera_P_fx" default="421.373566"/>
+<xacro:arg name="nicla_camera_P_fy" default="426.438812"/>
+<xacro:arg name="nicla_camera_P_cx" default="168.731782"/>
+<xacro:arg name="nicla_camera_P_cy" default="102.665989"/>
+<!-- ###################### CAM PARAMS ########################################### -->
+
 <xacro:arg name="nicla_tof" default="true"/>
 <xacro:arg name="nicla_tof_visualize" default="true"/>
 <xacro:arg name="nicla_mic" default="true"/>
@@ -10,6 +46,17 @@
 <xacro:arg name="nicla_use_mesh" default="true"/>
 
 <xacro:property name="NICLA_CAMERA" value="$(arg nicla_camera)" />
+<xacro:property name="NICLA_CAMERA_WIDTH" value="$(arg nicla_camera_width)" />
+<xacro:property name="NICLA_CAMERA_HEIGHT" value="$(arg nicla_camera_height)" />
+<xacro:property name="NICLA_CAMERA_HZ" value="$(arg nicla_camera_hz)" />
+<xacro:property name="NICLA_CAMERA_K_fx" value="$(arg nicla_camera_K_fx)" />
+<xacro:property name="NICLA_CAMERA_K_fy" value="$(arg nicla_camera_K_fy)" />
+<xacro:property name="NICLA_CAMERA_K_cx" value="$(arg nicla_camera_K_cx)" />
+<xacro:property name="NICLA_CAMERA_K_cy" value="$(arg nicla_camera_K_cy)" />
+<xacro:property name="NICLA_CAMERA_P_fx" value="$(arg nicla_camera_P_fx)" />
+<xacro:property name="NICLA_CAMERA_P_fy" value="$(arg nicla_camera_P_fy)" />
+<xacro:property name="NICLA_CAMERA_P_cx" value="$(arg nicla_camera_P_cx)" />
+<xacro:property name="NICLA_CAMERA_P_cy" value="$(arg nicla_camera_P_cy)" />
 <xacro:property name="NICLA_TOF" value="$(arg nicla_tof)" />
 <xacro:property name="nicla_tof_visualize" value="$(arg nicla_tof_visualize)" />
 <xacro:property name="NICLA_MIC" value="$(arg nicla_mic)" />
@@ -59,20 +106,28 @@
     <xacro:if value="${NICLA_CAMERA}">
         <link name="${name}_camera"></link>  
         <joint name="${name}_base_to_camera" type="fixed">
-            <origin xyz="-0.00255 0.00778 0.0045" rpy="0 ${-PI_2} ${PI/2}"/>
+            <origin xyz="-0.00255 0.00778 0.0045" rpy="0 0 ${PI}"/>
             <parent link="${name}_base"/>
             <child link="${name}_camera"/>
         </joint>
 
+        <link name="${name}_camera_gz"></link>  
+        <joint name="${name}_camera_to_camera_gz" type="fixed">
+            <!-- gazebo sensor wants the x axis forward, z up -->
+            <origin xyz="-0.00255 0.00778 0.0045" rpy="0 ${-PI_2} ${-PI/2}"/>
+            <parent link="${name}_base"/>
+            <child link="${name}_camera_gz"/>
+        </joint>
+
         <!-- gazebo simulated camera -->
-        <gazebo reference="${name}_camera">
-        <sensor type="camera" name="${name}_camera">
-        <update_rate>30.0</update_rate>
-        <camera name="${name}_camera">
+        <gazebo reference="${name}_camera_gz">
+        <sensor type="camera" name="${name}_camera_gz">
+        <update_rate>${NICLA_CAMERA_HZ}</update_rate>
+        <camera name="${name}_camera_gz">
             <horizontal_fov>0.69813</horizontal_fov>  <!-- 80deg 1.39626rad-->
             <image>
-                <width>320</width>
-                <height>240</height>
+                <width>${NICLA_CAMERA_WIDTH}</width>
+                <height>${NICLA_CAMERA_HEIGHT}</height>
                 <format>R8G8B8</format>
             </image>
             <clip>
@@ -88,34 +143,35 @@
                 <center>0.5 0.5</center>
             </distortion>
             <lens>
-                <intrinsics>
-                    <!-- fx = fy = width / ( 2 * tan (hfov / 2 ) ) -->
-                    <fx>416.65053</fx>
-                    <fy>419.40464</fy>
-                    <!-- cx = ( width + 1 ) / 2 -->
-                    <cx>166.12451</cx>
-                    <!-- cy = ( height + 1 ) / 2 -->
-                    <cy>104.41054</cy>
-                    <s>0</s>
-                </intrinsics>
                 <projection>
-                    <p_fx>421.37357</p_fx>
-                    <p_fy>426.43881</p_fy>
-                    <p_cx>160.5</p_cx>
-                    <p_cy>120.5</p_cy>
+                    <p_fx>${NICLA_CAMERA_P_fx}</p_fx>
+                    <p_fy>${NICLA_CAMERA_P_fy}</p_fy>
+                    <p_cx>${NICLA_CAMERA_P_cx}</p_cx>
+                    <p_cy>${NICLA_CAMERA_P_cy}</p_cy>
                     <tx>0</tx>
                     <ty>0</ty>
                 </projection>
+                <intrinsics>
+                    <!-- fx = fy = width / ( 2 * tan (hfov / 2 ) ) -->
+                    <fx>${NICLA_CAMERA_K_fx}</fx>
+                    <fy>${NICLA_CAMERA_K_fy}</fy>
+                    <!-- cx = ( width + 1 ) / 2 -->
+                    <cx>${NICLA_CAMERA_K_cx}</cx>
+                    <!-- cy = ( height + 1 ) / 2 -->
+                    <cy>${NICLA_CAMERA_K_cy}</cy>
+                    <s>0</s>
+                </intrinsics>
             </lens>
         </camera>
         <plugin name="gazebo_ros_${name}_camera_controller" filename="libgazebo_ros_camera.so">
             <alwaysOn>true</alwaysOn>
-            <updateRate>0.0</updateRate>
+            <updateRate>${NICLA_CAMERA_HZ}</updateRate>
             <cameraName>${name}/camera</cameraName>
             <imageTopicName>image_raw</imageTopicName>
             <cameraInfoTopicName>camera_info</cameraInfoTopicName>
+            <!-- Cam Info and camera image MUST use the ros convention (z forward, x right), so
+            frame here is ${name}_camera (i.e. the "optical") and NOT ${name}_camera_gz -->
             <frameName>${name}_camera</frameName>
-
             <!-- Set to 0.0 -->
             <!-- <hackBaseline>0.0</hackBaseline>  -->
             <!-- Set to your k1 value -->
@@ -136,26 +192,6 @@
             <!-- <Cy>104.41054</Cy>  -->
             <!-- Set to your focal length value--> 
             <!-- <focalLength>439.597550</focalLength>  -->
-
-        <!-- 
-        Camera matrix K: 
-                        [fx, 0., cx,
-                         0., fy, cy,
-                         0., 0.,  1.] =
-
-        [416.65053,   0.     , 166.12451,
-           0.     , 419.40464, 104.41054,
-           0.     ,   0.     ,   1.     ]
-
-        Note: 
-        - ideally fx == fy
-        - ideally focalLenght = fx = fy
-        - focalLength = fx+fy/2 = 418.027585 
-            but focalLength MUST be img_width/(2.0*(tan(HFOV/2.0))) = 439.597550
-        
-
-        Distortion coefficients D (OpenCV plumb_bob model):
-        [k1,k2,t1,t2,k3]=[0.176808, -0.590488, -0.008412, 0.015473, 0.000000] -->
   
         </plugin>
         </sensor>
