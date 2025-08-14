@@ -146,10 +146,8 @@ class NiclaRosPublisher:
             ]
             #320x320 computed from 320x240 and chatgpt (a newer calib may be necessary)
             if (self.camera_height == 320) and (self.camera_width) == 320: 
-                self.camera_info_msg.K[2] = 160.0
-                self.camera_info_msg.K[5] = 160.0
-                self.camera_info_msg.P[2] = 160.0
-                self.camera_info_msg.P[6] = 160.0
+                self.camera_info_msg.K[5] = self.camera_info_msg.K[5]+40
+                self.camera_info_msg.P[6] = self.camera_info_msg.P[6]+40
 
             self.camera_info_pub = rospy.Publisher(
                 camera_info_topic, CameraInfo, queue_size=5
