@@ -10,3 +10,4 @@ from nicla_vision_ros.NiclaReceiverServerMicroPy import (
 )
 from nicla_vision_ros.NiclaRosPublisherMicroPy import NiclaRosPublisherMicroPy
 from nicla_vision_ros.TofOnImage import TofOnImage
+from nicla_vision_ros.TFOnImage import TFOnImage

@@ -51,6 +51,7 @@ catkin_install_python(PROGRAMS
 
 catkin_install_python(PROGRAMS
   scripts/tof_on_image
+  scripts/tf_on_image
   DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
 
