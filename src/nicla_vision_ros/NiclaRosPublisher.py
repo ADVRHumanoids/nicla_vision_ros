@@ -111,44 +111,77 @@ class NiclaRosPublisher:
             self.camera_info_msg.height = self.camera_height
             self.camera_info_msg.width = self.camera_width 
             self.camera_info_msg.distortion_model = "plumb_rob"
-            #WARNING: this calibration consider 320x240 resolution with RGB565 pixel format
+            #WARNING: this calibration has been made with 320x240 resolution (RGB565 pixel format)
+            fx_K = 416.650528
+            fy_K = 419.404643
+            cx_K = 166.124514
+            cy_K = 104.410543
+            fx_P = 421.373566
+            fy_P = 426.438812
+            cx_P = 168.731782
+            cy_P = 102.665989
+            k1_D = 0.176808
+            k2_D = -0.590488
+            p1_D = -0.008412
+            p2_D = 0.015473
+            k3_D = 0.000000
+
+            #320x320 computed from 320x240 (a newer calib may be necessary)
+            if (self.camera_height == 320) and (self.camera_width) == 320: 
+                cy_K = cy_K+40
+                cy_P = cy_P+40
+            # if image is rotated, we need to change the camera info (a newer calib may be necessary)
+            if self.camera_img_rotate_code == 0:  # no rotation
+                self.camera_info_msg.width = self.camera_width
+                self.camera_info_msg.height = self.camera_height
+
+            if self.camera_img_rotate_code == 1:  # 90 deg clockwise
+                self.camera_info_msg.height = self.camera_width
+                self.camera_info_msg.width = self.camera_height
+                
+                fx_K, fy_K = fy_K, fx_K
+                fx_P, fy_P = fy_P, fx_P
+                
+                cx_K, cy_K = self.camera_info_msg.width - cy_K, cx_K
+                cx_P, cy_P = self.camera_info_msg.width - cy_P, cx_P
+
+                p1_D, p2_D = -p2_D, p1_D
+
+            elif self.camera_img_rotate_code == 2:  # 180 deg
+                self.camera_info_msg.width = self.camera_width
+                self.camera_info_msg.height = self.camera_height
+
+                cx_K, cy_K = self.camera_info_msg.width - cx_K, self.camera_info_msg.height - cy_K
+                cx_P, cy_P = self.camera_info_msg.width - cx_P, self.camera_info_msg.height - cy_P
+
+                p1_D, p2_D = -p1_D, -p2_D
+
+            elif self.camera_img_rotate_code == 3:  # 270 deg clockwise
+                self.camera_info_msg.height = self.camera_width
+                self.camera_info_msg.width = self.camera_height
+                
+                fx_K, fy_K = fy_K, fx_K
+                fx_P, fy_P = fy_P, fx_P
+                
+                cx_K, cy_K = cy_K, self.camera_info_msg.height - cx_K
+                cx_P, cy_P = cy_P, self.camera_info_msg.height - cx_P
+
+                p1_D, p2_D = p2_D, -p1_D
+
             self.camera_info_msg.K = [
-                416.650528,
-                0.000000,
-                166.124514,
-                0.000000,
-                419.404643,
-                104.410543,
-                0.000000,
-                0.000000,
-                1.000000,
+                fx_K, 0, cx_K,
+                0, fy_K, cy_K,
+                0, 0, 1
             ]
             self.camera_info_msg.D = [
-                0.176808,
-                -0.590488,
-                -0.008412,
-                0.015473,
-                0.000000,
+                k1_D, k2_D, p1_D, p2_D, k3_D
             ]
             self.camera_info_msg.P = [
-                421.373566,
-                0.000000,
-                168.731782,
-                0.000000,
-                0.000000,
-                426.438812,
-                102.665989,
-                0.000000,
-                0.000000,
-                0.000000,
-                1.000000,
-                0.000000,
+                fx_P, 0.000000, cx_P, 0.000000,
+                0.000000, fy_P, cy_P, 0.000000,
+                0.000000, 0.000000, 1.000000, 0
             ]
-            #320x320 computed from 320x240 and chatgpt (a newer calib may be necessary)
-            if (self.camera_height == 320) and (self.camera_width) == 320: 
-                self.camera_info_msg.K[5] = self.camera_info_msg.K[5]+40
-                self.camera_info_msg.P[6] = self.camera_info_msg.P[6]+40
-
+            
             self.camera_info_pub = rospy.Publisher(
                 camera_info_topic, CameraInfo, queue_size=5
             )
