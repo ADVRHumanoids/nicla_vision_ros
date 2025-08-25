@@ -204,7 +204,7 @@ class NiclaReceiverSerial(serial.Serial):
                         #From Bayer RGB
                         elif self.camera_pixel_format == 'bayer':
                             pixels = np.frombuffer(data, dtype=np.uint8).reshape((self.camera_height, self.camera_width))
-                            image = cv2.cvtColor(pixels, cv2.COLOR_BAYER_BG2BGR)  # Convert Bayer to BGR
+                            image = cv2.cvtColor(pixels, cv2.COLOR_BayerGBRG2BGR)  # Convert Bayer to BGR
                         
                         else :
                             raise(f'Pixel format {self.camera_pixel_format} not available')
