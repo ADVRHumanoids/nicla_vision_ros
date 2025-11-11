@@ -78,7 +78,7 @@ Follow the below steps for enjoying your Arduino Nicla Vision board with ROS!
     ```bash
     $ roslaunch nicla_vision_ros nicla_receiver.launch receiver_ip:="x.x.x.x" connection_type:="tcp/udp/serial" <optional arguments>
     ```
-    - Set the socket type to be used, either TCP or UDP (`connection_type:=tcp`, `udp`, or `serial`).
+    - Set the socket type to be used, either TCP, UDP or Serial  (`connection_type:=tcp`, `udp`, or `serial`).
 
     - Set the `receiver_ip` with the IP address of your ROS-running machine.
         You can get this IP address by executing the following command:
