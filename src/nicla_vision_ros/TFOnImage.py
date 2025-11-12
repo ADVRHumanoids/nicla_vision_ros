@@ -147,9 +147,6 @@ class TFOnImage:
         self.img_arrived = True
         self.image = data
 
-    def range_callback(self, data):
-        self.range = data
-
     def get_image(self):
         try:
             if self.cam_compressed:

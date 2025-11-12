@@ -116,4 +116,4 @@ class TofOnImage:
 
         self.img_pub.publish(self.out_image)
 
-        pass
+        return True
